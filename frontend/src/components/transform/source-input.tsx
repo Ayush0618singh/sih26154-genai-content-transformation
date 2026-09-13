@@ -9,6 +9,7 @@ import {
   FileSpreadsheet,
   FileText,
   UploadCloud,
+  Video,
   X,
 } from "lucide-react";
 
@@ -61,13 +62,31 @@ interface SourceInputProps {
 function FileIcon({
   filename,
 }: {
-  filename: string;
+  filename:
+    string;
 }) {
   const extension =
     filename
       .split(".")
       .pop()
       ?.toLowerCase();
+
+
+  if (
+    [
+      "mp4",
+      "mov",
+      "webm",
+    ].includes(
+      extension ?? ""
+    )
+  ) {
+
+    return (
+      <Video className="size-6" />
+    );
+  }
+
 
   if (
     [
@@ -82,10 +101,12 @@ function FileIcon({
       extension ?? ""
     )
   ) {
+
     return (
       <FileImage className="size-6" />
     );
   }
+
 
   if (
     [
@@ -95,10 +116,12 @@ function FileIcon({
       extension ?? ""
     )
   ) {
+
     return (
       <FileSpreadsheet className="size-6" />
     );
   }
+
 
   return (
     <FileText className="size-6" />
@@ -112,20 +135,24 @@ export function SourceInput({
   onFileChange,
   onRejected,
 }: SourceInputProps) {
+
   const onDrop =
     useCallback(
       (
         acceptedFiles:
           File[]
       ) => {
+
         if (
           acceptedFiles[0]
         ) {
+
           onFileChange(
             acceptedFiles[0]
           );
         }
       },
+
       [
         onFileChange,
       ]
@@ -141,7 +168,8 @@ export function SourceInput({
 
     disabled,
 
-    maxFiles: 1,
+    maxFiles:
+      1,
 
     maxSize:
       MAX_FILE_SIZE,
@@ -183,28 +211,44 @@ export function SourceInput({
         ".tif",
         ".tiff",
       ],
+
+      "video/mp4": [
+        ".mp4",
+      ],
+
+      "video/quicktime": [
+        ".mov",
+      ],
+
+      "video/webm": [
+        ".webm",
+      ],
     },
 
     onDropRejected:
       (
         rejections
       ) => {
+
         const first =
           rejections[0];
 
         const error =
           first?.errors[0];
 
+
         if (
           error?.code ===
           "file-too-large"
         ) {
+
           onRejected(
             "File exceeds the 50 MB upload limit."
           );
 
           return;
         }
+
 
         onRejected(
           error?.message ??
@@ -215,6 +259,7 @@ export function SourceInput({
 
 
   if (file) {
+
     return (
       <Card>
         <CardContent className="flex items-center gap-4 p-5">
@@ -228,7 +273,9 @@ export function SourceInput({
 
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">
-              {file.name}
+              {
+                file.name
+              }
             </p>
 
             <p className="mt-1 text-xs text-muted-foreground">
@@ -265,9 +312,11 @@ export function SourceInput({
       {...getRootProps()}
       className={cn(
         "cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-colors",
+
         isDragActive
           ? "border-primary bg-primary/5"
           : "border-border bg-muted/20 hover:border-primary/50 hover:bg-muted/40",
+
         disabled &&
           "pointer-events-none opacity-60"
       )}
@@ -281,20 +330,17 @@ export function SourceInput({
       </div>
 
       <h3 className="mt-5 font-semibold">
-        Drop your source
-        content here
+        Drop your source content here
       </h3>
 
-      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-        PDF, DOCX, TXT,
-        JSON, CSV, XLSX or
-        image files up to
+      <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
+        PDF, DOCX, TXT, JSON, CSV, XLSX,
+        images or MP4/MOV/WebM videos up to
         50 MB.
       </p>
 
       <p className="mt-4 text-xs font-medium text-primary">
-        Click to browse or
-        drag and drop
+        Click to browse or drag and drop
       </p>
     </div>
   );

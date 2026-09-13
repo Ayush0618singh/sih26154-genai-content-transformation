@@ -1,4 +1,6 @@
-from pathlib import Path
+from pathlib import (
+    Path,
+)
 
 from uuid import (
     UUID,
@@ -53,11 +55,16 @@ from app.services.management.document_management import (
 
 from app.services.security.upload_security import (
     UploadSecurityError,
+    VIDEO_EXTENSIONS,
     validate_upload_file,
 )
 
 from app.services.storage.supabase_storage import (
     storage_service,
+)
+
+from app.services.video.video_parser import (
+    video_parser,
 )
 
 from app.utils.files import (
@@ -78,9 +85,29 @@ CHUNK_SIZE = (
 )
 
 
-# ============================================================
-# Temp upload helper
-# ============================================================
+def _resolve_input_type(
+    filename: str,
+) -> str:
+
+    extension = (
+        Path(
+            filename
+        )
+        .suffix
+        .lower()
+    )
+
+
+    if extension in (
+        VIDEO_EXTENSIONS
+    ):
+
+        return "video"
+
+
+    return get_input_type(
+        filename
+    )
 
 
 async def _save_upload_to_temp(
@@ -105,7 +132,9 @@ async def _save_upload_to_temp(
                 CHUNK_SIZE
             )
 
+
             if not chunk:
+
                 break
 
 
@@ -122,10 +151,12 @@ async def _save_upload_to_temp(
                     missing_ok=True
                 )
 
+
                 raise HTTPException(
                     status_code=(
                         status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
                     ),
+
                     detail=(
                         "File exceeds maximum "
                         f"upload size of "
@@ -148,6 +179,7 @@ async def _save_upload_to_temp(
             missing_ok=True
         )
 
+
         raise HTTPException(
             status_code=400,
             detail=(
@@ -157,11 +189,6 @@ async def _save_upload_to_temp(
 
 
     return total_size
-
-
-# ============================================================
-# Upload document
-# ============================================================
 
 
 @router.post(
@@ -205,7 +232,7 @@ async def upload_document(
     try:
 
         input_type = (
-            get_input_type(
+            _resolve_input_type(
                 safe_filename
             )
         )
@@ -220,12 +247,15 @@ async def upload_document(
         ) from exc
 
 
-    document_id = uuid4()
+    document_id = (
+        uuid4()
+    )
 
 
     temp_directory = Path(
         settings.temp_directory
     )
+
 
     temp_directory.mkdir(
         parents=True,
@@ -255,16 +285,16 @@ async def upload_document(
     )
 
 
-    database_record_created = False
+    database_record_created = (
+        False
+    )
 
-    storage_uploaded = False
+    storage_uploaded = (
+        False
+    )
 
 
     try:
-
-        # ----------------------------------------------------
-        # Save upload in chunks
-        # ----------------------------------------------------
 
         file_size = (
             await _save_upload_to_temp(
@@ -273,12 +303,6 @@ async def upload_document(
             )
         )
 
-
-        # ----------------------------------------------------
-        # SECURITY VALIDATION
-        #
-        # Do this BEFORE database/storage persistence.
-        # ----------------------------------------------------
 
         try:
 
@@ -313,60 +337,49 @@ async def upload_document(
         )
 
 
-        # ----------------------------------------------------
-        # Create processing DB row
-        # ----------------------------------------------------
-
         (
             admin.table(
                 "source_documents"
             )
             .insert(
                 {
-                    "id": str(
-                        document_id
-                    ),
+                    "id":
+                        str(
+                            document_id
+                        ),
 
-                    "user_id": str(
-                        current_user.id
-                    ),
+                    "user_id":
+                        str(
+                            current_user.id
+                        ),
 
-                    "original_filename": (
-                        safe_filename
-                    ),
+                    "original_filename":
+                        safe_filename,
 
-                    "mime_type": (
-                        validated_mime_type
-                    ),
+                    "mime_type":
+                        validated_mime_type,
 
-                    "file_size": (
-                        file_size
-                    ),
+                    "file_size":
+                        file_size,
 
-                    "input_type": (
-                        input_type
-                    ),
+                    "input_type":
+                        input_type,
 
-                    "storage_path": (
-                        storage_path
-                    ),
+                    "storage_path":
+                        storage_path,
 
-                    "status": (
-                        "processing"
-                    ),
+                    "status":
+                        "processing",
 
                     "metadata": {
-                        "original_client_filename": (
-                            file.filename
-                        ),
+                        "original_client_filename":
+                            file.filename,
 
-                        "ocr_language": (
-                            ocr_language
-                        ),
+                        "ocr_language":
+                            ocr_language,
 
-                        "validated_mime_type": (
-                            validated_mime_type
-                        ),
+                        "validated_mime_type":
+                            validated_mime_type,
                     },
                 }
             )
@@ -374,12 +387,10 @@ async def upload_document(
         )
 
 
-        database_record_created = True
+        database_record_created = (
+            True
+        )
 
-
-        # ----------------------------------------------------
-        # Upload to PRIVATE storage
-        # ----------------------------------------------------
 
         storage_service.upload_source_document(
             local_path=(
@@ -396,37 +407,59 @@ async def upload_document(
         )
 
 
-        storage_uploaded = True
-
-
-        # ----------------------------------------------------
-        # Parse / OCR / vision
-        # ----------------------------------------------------
-
-        extraction = (
-            await document_parser.parse(
-                file_path=(
-                    temporary_path
-                ),
-
-                original_filename=(
-                    safe_filename
-                ),
-
-                mime_type=(
-                    validated_mime_type
-                ),
-
-                ocr_language=(
-                    ocr_language
-                ),
-            )
+        storage_uploaded = (
+            True
         )
 
 
-        # ----------------------------------------------------
-        # Final ready state
-        # ----------------------------------------------------
+        # ====================================================
+        # VIDEO PIPELINE
+        # ====================================================
+
+        if (
+            input_type
+            == "video"
+        ):
+
+            extraction = (
+                await video_parser.parse(
+                    file_path=(
+                        temporary_path
+                    ),
+
+                    mime_type=(
+                        validated_mime_type
+                    ),
+                )
+            )
+
+
+        # ====================================================
+        # EXISTING DOCUMENT / IMAGE PIPELINE
+        # ====================================================
+
+        else:
+
+            extraction = (
+                await document_parser.parse(
+                    file_path=(
+                        temporary_path
+                    ),
+
+                    original_filename=(
+                        safe_filename
+                    ),
+
+                    mime_type=(
+                        validated_mime_type
+                    ),
+
+                    ocr_language=(
+                        ocr_language
+                    ),
+                )
+            )
+
 
         (
             admin.table(
@@ -437,21 +470,17 @@ async def upload_document(
                     "status":
                         "ready",
 
-                    "extraction_method": (
-                        extraction.extraction_method
-                    ),
+                    "extraction_method":
+                        extraction.extraction_method,
 
-                    "page_count": (
-                        extraction.page_count
-                    ),
+                    "page_count":
+                        extraction.page_count,
 
-                    "character_count": (
-                        extraction.character_count
-                    ),
+                    "character_count":
+                        extraction.character_count,
 
-                    "extracted_text": (
-                        extraction.text
-                    ),
+                    "extracted_text":
+                        extraction.text,
 
                     "metadata": {
                         **(
@@ -459,21 +488,17 @@ async def upload_document(
                             or {}
                         ),
 
-                        "validated_mime_type": (
-                            validated_mime_type
-                        ),
+                        "validated_mime_type":
+                            validated_mime_type,
 
-                        "ocr_language": (
-                            ocr_language
-                        ),
+                        "ocr_language":
+                            ocr_language,
 
-                        "extraction_method": (
-                            extraction.extraction_method
-                        ),
+                        "extraction_method":
+                            extraction.extraction_method,
 
-                        "page_count": (
-                            extraction.page_count
-                        ),
+                        "page_count":
+                            extraction.page_count,
                     },
 
                     "error_message":
@@ -496,54 +521,43 @@ async def upload_document(
         )
 
 
-        # ----------------------------------------------------
-        # Activity
-        # ----------------------------------------------------
-
         (
             admin.table(
                 "activity_events"
             )
             .insert(
                 {
-                    "user_id": str(
-                        current_user.id
-                    ),
+                    "user_id":
+                        str(
+                            current_user.id
+                        ),
 
-                    "event_type": (
-                        "document_uploaded"
-                    ),
+                    "event_type":
+                        "document_uploaded",
 
-                    "source_document_id": (
+                    "source_document_id":
                         str(
                             document_id
-                        )
-                    ),
+                        ),
 
                     "metadata": {
-                        "filename": (
-                            safe_filename
-                        ),
+                        "filename":
+                            safe_filename,
 
-                        "input_type": (
-                            input_type
-                        ),
+                        "input_type":
+                            input_type,
 
-                        "file_size": (
-                            file_size
-                        ),
+                        "file_size":
+                            file_size,
 
-                        "mime_type": (
-                            validated_mime_type
-                        ),
+                        "mime_type":
+                            validated_mime_type,
 
-                        "character_count": (
-                            extraction.character_count
-                        ),
+                        "character_count":
+                            extraction.character_count,
 
-                        "extraction_method": (
-                            extraction.extraction_method
-                        ),
+                        "extraction_method":
+                            extraction.extraction_method,
                     },
                 }
             )
@@ -612,11 +626,6 @@ async def upload_document(
 
     except Exception as exc:
 
-        # ----------------------------------------------------
-        # If storage was already created,
-        # remove the physical object.
-        # ----------------------------------------------------
-
         if storage_uploaded:
 
             try:
@@ -629,11 +638,6 @@ async def upload_document(
 
                 pass
 
-
-        # ----------------------------------------------------
-        # Preserve failed DB record for audit/history,
-        # but never leave a false storage reference.
-        # ----------------------------------------------------
 
         if database_record_created:
 
@@ -651,11 +655,10 @@ async def upload_document(
                             "storage_path":
                                 None,
 
-                            "error_message": (
+                            "error_message":
                                 str(
                                     exc
-                                )[:2000]
-                            ),
+                                )[:2000],
                         }
                     )
                     .eq(
@@ -693,11 +696,6 @@ async def upload_document(
         )
 
 
-# ============================================================
-# Direct text source
-# ============================================================
-
-
 @router.post(
     "/text",
     response_model=(
@@ -708,11 +706,13 @@ async def upload_document(
     ),
 )
 async def create_text_document(
-    request: TextDocumentCreateRequest,
+    request:
+        TextDocumentCreateRequest,
 
-    current_user: AuthenticatedUser = Depends(
-        get_current_user
-    ),
+    current_user:
+        AuthenticatedUser = Depends(
+            get_current_user
+        ),
 ) -> DocumentDetailResponse:
 
     try:
@@ -741,11 +741,6 @@ async def create_text_document(
         ) from exc
 
 
-# ============================================================
-# List documents
-# ============================================================
-
-
 @router.get(
     "",
     response_model=(
@@ -764,23 +759,27 @@ async def list_documents(
         le=100,
     ),
 
-    status_filter: str | None = Query(
-        default=None,
-        alias="status",
-    ),
+    status_filter:
+        str | None = Query(
+            default=None,
+            alias="status",
+        ),
 
-    input_type: str | None = Query(
-        default=None,
-    ),
+    input_type:
+        str | None = Query(
+            default=None,
+        ),
 
-    search: str | None = Query(
-        default=None,
-        max_length=150,
-    ),
+    search:
+        str | None = Query(
+            default=None,
+            max_length=150,
+        ),
 
-    current_user: AuthenticatedUser = Depends(
-        get_current_user
-    ),
+    current_user:
+        AuthenticatedUser = Depends(
+            get_current_user
+        ),
 ) -> DocumentListResponse:
 
     return (
@@ -813,11 +812,6 @@ async def list_documents(
     )
 
 
-# ============================================================
-# Detail
-# ============================================================
-
-
 @router.get(
     "/{document_id}",
     response_model=(
@@ -825,11 +819,13 @@ async def list_documents(
     ),
 )
 async def get_document(
-    document_id: UUID,
+    document_id:
+        UUID,
 
-    current_user: AuthenticatedUser = Depends(
-        get_current_user
-    ),
+    current_user:
+        AuthenticatedUser = Depends(
+            get_current_user
+        ),
 ) -> DocumentDetailResponse:
 
     try:
@@ -857,11 +853,6 @@ async def get_document(
         ) from exc
 
 
-# ============================================================
-# Delete
-# ============================================================
-
-
 @router.delete(
     "/{document_id}",
     response_model=(
@@ -869,11 +860,13 @@ async def get_document(
     ),
 )
 async def delete_document(
-    document_id: UUID,
+    document_id:
+        UUID,
 
-    current_user: AuthenticatedUser = Depends(
-        get_current_user
-    ),
+    current_user:
+        AuthenticatedUser = Depends(
+            get_current_user
+        ),
 ) -> DeleteResponse:
 
     try:

@@ -85,6 +85,7 @@ const inputTypes = [
   "docx",
   "text",
   "image",
+  "video",
   "csv",
   "xlsx",
   "json",
