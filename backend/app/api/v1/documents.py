@@ -466,6 +466,14 @@ async def upload_document(
                         "ocr_language": (
                             ocr_language
                         ),
+
+                        "extraction_method": (
+                            extraction.extraction_method
+                        ),
+
+                        "page_count": (
+                            extraction.page_count
+                        ),
                     },
 
                     "error_message":

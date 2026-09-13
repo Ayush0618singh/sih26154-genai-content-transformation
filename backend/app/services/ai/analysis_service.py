@@ -1,217 +1,338 @@
-import asyncio
+from __future__ import annotations
 
-from app.schemas.transformation import (
-    ChunkDigest,
-    ContentAnalysis,
+from typing import (
+    Any,
 )
-from app.services.ai.gemini_service import (
-    gemini_service,
-)
-from app.services.rag.chunker import (
-    document_chunker,
+
+from app.services.analysis.hierarchical_analysis import (
+    hierarchical_analysis_service,
 )
 
 
-DIRECT_ANALYSIS_LIMIT = 50000
+class AnalysisService:
 
-MAX_ANALYSIS_CHUNKS = 30
+    @staticmethod
+    def _resolve_text(
+        *,
+        text: str | None = None,
+        source_text: str | None = None,
+        content: str | None = None,
+        document: Any = None,
+    ) -> str:
 
-ANALYSIS_CONCURRENCY = 3
-
-
-class ContentAnalysisService:
-
-    async def _analyse_direct(
-        self,
-        text: str,
-        filename: str,
-    ) -> ContentAnalysis:
-        prompt = f"""
-Analyze the following source document deeply.
-
-Filename:
-{filename}
-
-Your job is to create a factual content-intelligence model.
-
-Identify:
-- inferred title
-- content type
-- one-line summary
-- executive context
-- major topics
-- important factual claims
-- named entities
-- numbers and metrics
-- stakeholders
-- risks
-- opportunities
-- unresolved or important questions
-- likely useful audiences
-- source-quality limitations
-
-Do not invent missing information.
-
-SOURCE DOCUMENT
-================
-{text}
-================
-END SOURCE DOCUMENT
-""".strip()
-
-        return await (
-            gemini_service
-            .generate_structured(
-                prompt,
-                ContentAnalysis,
-            )
-        )
-
-    async def _digest_chunk(
-        self,
-        text: str,
-        chunk_number: int,
-        total_chunks: int,
-        semaphore: asyncio.Semaphore,
-    ) -> ChunkDigest:
-        prompt = f"""
-Analyze source segment {chunk_number} of {total_chunks}.
-
-Extract only information actually present in this segment.
-
-Capture:
-- concise summary
-- key points
-- factual claims
-- important entities
-- numerical metrics
-- risks
-- opportunities
-
-SOURCE SEGMENT
-==============
-{text}
-==============
-END SEGMENT
-""".strip()
-
-        async with semaphore:
-            return await (
-                gemini_service
-                .generate_structured(
-                    prompt,
-                    ChunkDigest,
-                )
-            )
-
-    async def _analyse_large_document(
-        self,
-        text: str,
-        filename: str,
-    ) -> ContentAnalysis:
-        chunks = document_chunker.split(
-            text
-        )
-
-        if len(chunks) > MAX_ANALYSIS_CHUNKS:
-            step = max(
-                1,
-                len(chunks)
-                // MAX_ANALYSIS_CHUNKS,
-            )
-
-            chunks = chunks[
-                ::step
-            ][:MAX_ANALYSIS_CHUNKS]
-
-        semaphore = asyncio.Semaphore(
-            ANALYSIS_CONCURRENCY
-        )
-
-        tasks = [
-            self._digest_chunk(
-                chunk.text,
-                index + 1,
-                len(chunks),
-                semaphore,
-            )
-            for index, chunk
-            in enumerate(chunks)
-        ]
-
-        digests = await asyncio.gather(
-            *tasks
-        )
-
-        digest_text = "\n\n".join(
-            (
-                f"SEGMENT {index + 1}\n"
-                f"{digest.model_dump_json()}"
-            )
-            for index, digest
-            in enumerate(digests)
-        )
-
-        prompt = f"""
-Create one consolidated content-intelligence analysis
-from the supplied segment analyses.
-
-Original filename:
-{filename}
-
-Rules:
-- Merge duplicates.
-- Preserve important metrics and named entities.
-- Never introduce facts absent from segment analyses.
-- Mention source limitations where evidence is incomplete.
-- Produce a coherent view of the complete document.
-
-SEGMENT ANALYSES
-================
-{digest_text}
-================
-END SEGMENT ANALYSES
-""".strip()
-
-        return await (
-            gemini_service
-            .generate_structured(
-                prompt,
-                ContentAnalysis,
-            )
-        )
-
-    async def analyse(
-        self,
-        text: str,
-        filename: str,
-    ) -> ContentAnalysis:
-        clean_text = text.strip()
-
-        if not clean_text:
-            raise ValueError(
-                "Cannot analyse empty content."
-            )
-
-        if (
-            len(clean_text)
-            <= DIRECT_ANALYSIS_LIMIT
+        for value in (
+            text,
+            source_text,
+            content,
         ):
-            return await (
-                self._analyse_direct(
-                    clean_text,
-                    filename,
+
+            if (
+                isinstance(
+                    value,
+                    str,
                 )
+                and value.strip()
+            ):
+
+                return value
+
+
+        if document is not None:
+
+            if isinstance(
+                document,
+                dict,
+            ):
+
+                for key in (
+                    "extracted_text",
+                    "text",
+                    "content",
+                ):
+
+                    value = (
+                        document.get(
+                            key
+                        )
+                    )
+
+
+                    if (
+                        isinstance(
+                            value,
+                            str,
+                        )
+                        and value.strip()
+                    ):
+
+                        return value
+
+
+            for attribute in (
+                "extracted_text",
+                "text",
+                "content",
+            ):
+
+                value = getattr(
+                    document,
+                    attribute,
+                    None,
+                )
+
+
+                if (
+                    isinstance(
+                        value,
+                        str,
+                    )
+                    and value.strip()
+                ):
+
+                    return value
+
+
+        raise ValueError(
+            "No source text was supplied "
+            "for analysis."
+        )
+
+
+    @staticmethod
+    def _resolve_metadata(
+        *,
+        metadata: dict[
+            str,
+            Any,
+        ] | None = None,
+
+        source_metadata: dict[
+            str,
+            Any,
+        ] | None = None,
+
+        document: Any = None,
+    ) -> dict[
+        str,
+        Any,
+    ]:
+
+        combined: dict[
+            str,
+            Any,
+        ] = {}
+
+
+        if source_metadata:
+
+            combined.update(
+                source_metadata
             )
 
-        return await (
-            self._analyse_large_document(
-                clean_text,
-                filename,
+
+        if metadata:
+
+            combined.update(
+                metadata
+            )
+
+
+        if document is not None:
+
+            if isinstance(
+                document,
+                dict,
+            ):
+
+                document_metadata = (
+                    document.get(
+                        "metadata"
+                    )
+                )
+
+
+                extraction_method = (
+                    document.get(
+                        "extraction_method"
+                    )
+                )
+
+            else:
+
+                document_metadata = getattr(
+                    document,
+                    "metadata",
+                    None,
+                )
+
+
+                extraction_method = getattr(
+                    document,
+                    "extraction_method",
+                    None,
+                )
+
+
+            if isinstance(
+                document_metadata,
+                dict,
+            ):
+
+                combined.update(
+                    document_metadata
+                )
+
+
+            if extraction_method:
+
+                combined[
+                    "extraction_method"
+                ] = str(
+                    extraction_method
+                )
+
+
+        return combined
+
+
+    async def analyze_document(
+        self,
+        text: str | None = None,
+        *,
+        source_text: str | None = None,
+        content: str | None = None,
+        document_id: (
+            str | None
+        ) = None,
+        metadata: dict[
+            str,
+            Any,
+        ] | None = None,
+        source_metadata: dict[
+            str,
+            Any,
+        ] | None = None,
+        document: Any = None,
+        **_: Any,
+    ) -> dict[
+        str,
+        Any,
+    ]:
+
+        resolved_text = (
+            self._resolve_text(
+                text=(
+                    text
+                ),
+
+                source_text=(
+                    source_text
+                ),
+
+                content=(
+                    content
+                ),
+
+                document=(
+                    document
+                ),
             )
         )
 
 
-content_analysis_service = (
-    ContentAnalysisService()
+        resolved_metadata = (
+            self._resolve_metadata(
+                metadata=(
+                    metadata
+                ),
+
+                source_metadata=(
+                    source_metadata
+                ),
+
+                document=(
+                    document
+                ),
+            )
+        )
+
+
+        result = (
+            await hierarchical_analysis_service
+            .analyze(
+                text=(
+                    resolved_text
+                ),
+
+                document_id=(
+                    document_id
+                ),
+
+                metadata=(
+                    resolved_metadata
+                ),
+            )
+        )
+
+
+        return (
+            result.model_dump(
+                mode="json"
+            )
+        )
+
+
+    async def analyze_source(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> dict[
+        str,
+        Any,
+    ]:
+
+        return (
+            await self.analyze_document(
+                *args,
+                **kwargs,
+            )
+        )
+
+
+    async def analyze_content(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> dict[
+        str,
+        Any,
+    ]:
+
+        return (
+            await self.analyze_document(
+                *args,
+                **kwargs,
+            )
+        )
+
+
+    async def analyze(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> dict[
+        str,
+        Any,
+    ]:
+
+        return (
+            await self.analyze_document(
+                *args,
+                **kwargs,
+            )
+        )
+
+
+analysis_service = (
+    AnalysisService()
 )
