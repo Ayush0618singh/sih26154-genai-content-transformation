@@ -12,7 +12,8 @@ import {
 
 
 interface AppShellProps {
-  children: ReactNode;
+  children:
+    ReactNode;
 
   userEmail:
     string | null;
@@ -24,20 +25,47 @@ export function AppShell({
   userEmail,
 }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-muted/20">
-      <div className="fixed inset-y-0 left-0 z-40 hidden lg:block">
+    <div className="premium-page min-h-screen bg-background">
+      <div
+        className={[
+          "fixed",
+          "inset-y-0",
+          "left-0",
+          "z-40",
+          "hidden",
+          "lg:block",
+        ].join(" ")}
+      >
         <AppSidebar />
       </div>
 
-      <div className="lg:pl-72">
+      <div className="min-h-screen lg:pl-[17.5rem]">
         <AppHeader
           userEmail={
             userEmail
           }
         />
 
-        <main className="min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8">
-          {children}
+        <main
+          className={[
+            "relative",
+            "min-h-[calc(100vh-4.75rem)]",
+
+            "px-4",
+            "py-5",
+
+            "sm:px-6",
+            "sm:py-6",
+
+            "lg:px-8",
+            "lg:py-8",
+
+            "xl:px-10",
+          ].join(" ")}
+        >
+          <div className="mx-auto w-full max-w-[1600px]">
+            {children}
+          </div>
         </main>
       </div>
     </div>

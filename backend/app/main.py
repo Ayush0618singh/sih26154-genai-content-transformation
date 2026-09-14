@@ -41,17 +41,16 @@ from app.core.logging_config import (
     configure_logging,
 )
 
+from app.middleware.rate_limit import (
+    DatabaseRateLimitMiddleware,
+)
+
 from app.middleware.request_context import (
     RequestContextMiddleware,
 )
 
 
 configure_logging()
-
-
-# ============================================================
-# Helpers
-# ============================================================
 
 
 def _allowed_origins() -> list[
@@ -70,10 +69,12 @@ def _allowed_origins() -> list[
 
         return [
             origin.strip()
+
             for origin
             in value.split(
                 ","
             )
+
             if origin.strip()
         ]
 
@@ -82,17 +83,14 @@ def _allowed_origins() -> list[
         str(
             origin
         ).strip()
+
         for origin
         in value
+
         if str(
             origin
         ).strip()
     ]
-
-
-# ============================================================
-# Lifespan
-# ============================================================
 
 
 @asynccontextmanager
@@ -119,25 +117,7 @@ async def lifespan(
     )
 
 
-    chroma_path = (
-        settings.chroma_directory_path
-    )
-
-
-    Path(
-        chroma_path
-    ).mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-
     yield
-
-
-# ============================================================
-# FastAPI app
-# ============================================================
 
 
 app = FastAPI(
@@ -164,8 +144,24 @@ app = FastAPI(
 
 
 # ============================================================
-# Middleware
+# Middleware ordering
+#
+# FastAPI / Starlette wraps the most recently-added
+# middleware around earlier middleware.
+#
+# CORS is therefore added last so even 429/500 responses
+# receive correct CORS handling.
 # ============================================================
+
+
+app.add_middleware(
+    DatabaseRateLimitMiddleware
+)
+
+
+app.add_middleware(
+    RequestContextMiddleware
+)
 
 
 app.add_middleware(
@@ -187,18 +183,11 @@ app.add_middleware(
 
     expose_headers=[
         "X-Request-ID",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
     ],
 )
-
-
-app.add_middleware(
-    RequestContextMiddleware
-)
-
-
-# ============================================================
-# Exception handlers
-# ============================================================
 
 
 app.add_exception_handler(
@@ -217,11 +206,6 @@ app.add_exception_handler(
     Exception,
     unhandled_exception_handler,
 )
-
-
-# ============================================================
-# API
-# ============================================================
 
 
 app.include_router(

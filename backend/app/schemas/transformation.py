@@ -103,6 +103,99 @@ class ContentAnalysis(BaseModel):
         default_factory=list
     )
 
+    @field_validator(
+        "metrics",
+        mode="before",
+    )
+    @classmethod
+    def normalize_metrics(
+        cls,
+        value,
+    ):
+        if value is None:
+            return []
+
+        normalized = []
+
+        for item in value:
+            if isinstance(
+                item,
+                AnalysisMetric,
+            ):
+                normalized.append(
+                    item
+                )
+                continue
+
+            if isinstance(
+                item,
+                dict,
+            ):
+                normalized.append(
+                    item
+                )
+                continue
+
+            if isinstance(
+                item,
+                str,
+            ):
+                text = item.strip()
+
+                if not text:
+                    continue
+
+                if ":" in text:
+                    name, metric_value = (
+                        text.split(
+                            ":",
+                            1,
+                        )
+                    )
+
+                    normalized.append(
+                        {
+                            "name": (
+                                name.strip()
+                                or "Metric"
+                            ),
+                            "value": (
+                                metric_value.strip()
+                            ),
+                            "context": (
+                                "Extracted from "
+                                "source analysis."
+                            ),
+                        }
+                    )
+
+                else:
+                    normalized.append(
+                        {
+                            "name": "Metric",
+                            "value": text,
+                            "context": (
+                                "Extracted from "
+                                "source analysis."
+                            ),
+                        }
+                    )
+
+                continue
+
+            normalized.append(
+                {
+                    "name": "Metric",
+                    "value": str(item),
+                    "context": (
+                        "Extracted from "
+                        "source analysis."
+                    ),
+                }
+            )
+
+        return normalized
+
 
 class ChunkDigest(BaseModel):
     summary: str

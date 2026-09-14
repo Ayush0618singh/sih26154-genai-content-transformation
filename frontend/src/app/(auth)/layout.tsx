@@ -8,9 +8,11 @@ import type {
 
 import {
   BrainCircuit,
+  Database,
   FileOutput,
   ScanText,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 import {
@@ -37,10 +39,10 @@ const features = [
       ScanText,
 
     title:
-      "Understand any source",
+      "Multimodal Intelligence",
 
     description:
-      "PDFs, documents, images, OCR and structured data.",
+      "Documents, images, video, OCR and structured data.",
   },
 
   {
@@ -48,10 +50,10 @@ const features = [
       BrainCircuit,
 
     title:
-      "Grounded AI reasoning",
+      "Grounded AI",
 
     description:
-      "Structured analysis with RAG and semantic retrieval.",
+      "Gemini analysis with evidence-aware RAG retrieval.",
   },
 
   {
@@ -59,10 +61,10 @@ const features = [
       FileOutput,
 
     title:
-      "Transform everywhere",
+      "Multi-format Creation",
 
     description:
-      "Reports, presentations, social content, data and video packages.",
+      "Summaries, reports, presentations, social and structured outputs.",
   },
 
   {
@@ -70,10 +72,10 @@ const features = [
       ShieldCheck,
 
     title:
-      "Private by design",
+      "Private by Design",
 
     description:
-      "Authenticated access, RLS and private file storage.",
+      "Authentication, RLS, private storage and signed downloads.",
   },
 ];
 
@@ -85,35 +87,148 @@ export default function AuthLayout({
     ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,var(--color-muted),transparent_35%),radial-gradient(circle_at_bottom_right,var(--color-accent),transparent_35%)] opacity-60" />
+    <div className="premium-page relative min-h-screen overflow-hidden bg-background">
+      {/* Background glow */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div
+          className={[
+            "absolute",
+            "-left-48",
+            "-top-48",
+            "size-[520px]",
+            "rounded-full",
+            "bg-primary/10",
+            "blur-[110px]",
+          ].join(" ")}
+        />
 
-      <header className="absolute inset-x-0 top-0 z-20 flex h-20 items-center justify-between px-5 sm:px-8 lg:px-12">
+        <div
+          className={[
+            "absolute",
+            "-bottom-64",
+            "right-[-12rem]",
+            "size-[620px]",
+            "rounded-full",
+            "bg-primary/8",
+            "blur-[130px]",
+          ].join(" ")}
+        />
+      </div>
+
+
+      {/* Header */}
+      <header
+        className={[
+          "absolute",
+          "inset-x-0",
+          "top-0",
+          "z-30",
+
+          "flex",
+          "h-20",
+          "items-center",
+          "justify-between",
+
+          "px-5",
+          "sm:px-8",
+          "lg:px-12",
+        ].join(" ")}
+      >
         <AppLogo />
 
         <ThemeToggle />
       </header>
 
-      <main className="grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="hidden border-r bg-muted/20 px-12 lg:flex lg:flex-col lg:justify-center xl:px-20">
-          <div className="max-w-xl">
-            <div className="mb-8 inline-flex rounded-full border bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground shadow-sm backdrop-blur">
-              GenAI Content Intelligence Platform
+
+      <main
+        className={[
+          "grid",
+          "min-h-screen",
+
+          "lg:grid-cols-[1.08fr_0.92fr]",
+        ].join(" ")}
+      >
+        {/* Left marketing panel */}
+        <section
+          className={[
+            "relative",
+            "hidden",
+            "overflow-hidden",
+
+            "border-r",
+            "border-border/60",
+
+            "lg:flex",
+            "lg:flex-col",
+            "lg:justify-center",
+
+            "px-12",
+            "xl:px-20",
+          ].join(" ")}
+        >
+          <div
+            className={[
+              "absolute",
+              "inset-8",
+              "-z-10",
+
+              "rounded-[2.5rem]",
+
+              "border",
+              "border-primary/10",
+
+              "bg-gradient-to-br",
+              "from-primary/8",
+              "via-card/25",
+              "to-transparent",
+            ].join(" ")}
+          />
+
+          <div className="mx-auto w-full max-w-2xl">
+            <div className="premium-kicker">
+              <Sparkles className="size-3.5" />
+
+              SIH26154 · Generative AI
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight xl:text-5xl">
-              Turn one source into
+            <h1
+              className={[
+                "mt-7",
+                "max-w-xl",
 
-              <span className="block text-primary">
-                every useful format.
+                "text-4xl",
+                "font-bold",
+                "leading-[1.08]",
+                "tracking-[-0.045em]",
+
+                "xl:text-[3.3rem]",
+              ].join(" ")}
+            >
+              Intelligence in.
+
+              <span className="gold-text block">
+                Impact out.
               </span>
             </h1>
 
-            <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground">
-              Extract, understand, ground and transform complex content into audience-ready communication using a secure multimodal AI pipeline.
+            <p
+              className={[
+                "mt-6",
+                "max-w-xl",
+
+                "text-base",
+                "leading-7",
+                "text-muted-foreground",
+              ].join(" ")}
+            >
+              TransformAI converts complex source material into
+              grounded, audience-ready communication using multimodal
+              ingestion, AI analysis, retrieval and structured
+              generation.
             </p>
 
-            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+
+            <div className="mt-9 grid gap-3 sm:grid-cols-2">
               {features.map(
                 (
                   feature
@@ -126,17 +241,58 @@ export default function AuthLayout({
                       key={
                         feature.title
                       }
-                      className="rounded-2xl border bg-background/70 p-5 shadow-sm backdrop-blur"
-                    >
-                      <Icon className="mb-4 size-5 text-primary" />
+                      className={[
+                        "group",
+                        "rounded-2xl",
 
-                      <p className="font-semibold">
+                        "border",
+                        "border-border/70",
+
+                        "bg-card/55",
+
+                        "p-4",
+
+                        "backdrop-blur-xl",
+
+                        "transition-all",
+                        "duration-300",
+
+                        "hover:-translate-y-0.5",
+                        "hover:border-primary/25",
+                        "hover:bg-card/80",
+                      ].join(" ")}
+                    >
+                      <div
+                        className={[
+                          "premium-icon-box",
+                          "size-9",
+                          "rounded-xl",
+                        ].join(" ")}
+                      >
+                        <Icon className="size-4" />
+                      </div>
+
+                      <h2
+                        className={[
+                          "mt-4",
+                          "text-sm",
+                          "font-semibold",
+                          "tracking-[-0.02em]",
+                        ].join(" ")}
+                      >
                         {
                           feature.title
                         }
-                      </p>
+                      </h2>
 
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      <p
+                        className={[
+                          "mt-1.5",
+                          "text-xs",
+                          "leading-5",
+                          "text-muted-foreground",
+                        ].join(" ")}
+                      >
                         {
                           feature.description
                         }
@@ -146,13 +302,84 @@ export default function AuthLayout({
                 }
               )}
             </div>
+
+
+            <div className="mt-8 gold-divider" />
+
+            <div
+              className={[
+                "mt-6",
+                "flex",
+                "flex-wrap",
+                "items-center",
+                "gap-x-6",
+                "gap-y-3",
+
+                "text-[11px]",
+                "font-semibold",
+                "uppercase",
+                "tracking-[0.12em]",
+                "text-muted-foreground",
+              ].join(" ")}
+            >
+              <span className="flex items-center gap-2">
+                <ShieldCheck className="size-4 text-primary" />
+
+                Secure
+              </span>
+
+              <span className="flex items-center gap-2">
+                <Database className="size-4 text-primary" />
+
+                RAG Grounded
+              </span>
+
+              <span className="flex items-center gap-2">
+                <BrainCircuit className="size-4 text-primary" />
+
+                AI Powered
+              </span>
+            </div>
           </div>
         </section>
 
 
-        <section className="flex min-h-screen items-center justify-center px-5 pb-10 pt-28 sm:px-8 lg:px-12">
-          <div className="w-full max-w-md">
+        {/* Form */}
+        <section
+          className={[
+            "relative",
+            "flex",
+            "min-h-screen",
+            "items-center",
+            "justify-center",
+
+            "px-5",
+            "pb-10",
+            "pt-28",
+
+            "sm:px-8",
+            "lg:px-12",
+          ].join(" ")}
+        >
+          <div className="w-full max-w-[440px]">
             {children}
+
+            <div
+              className={[
+                "mt-7",
+                "flex",
+                "items-center",
+                "justify-center",
+                "gap-2",
+
+                "text-[11px]",
+                "text-muted-foreground",
+              ].join(" ")}
+            >
+              <ShieldCheck className="size-3.5 text-primary" />
+
+              Protected by secure authentication and private data isolation
+            </div>
           </div>
         </section>
       </main>

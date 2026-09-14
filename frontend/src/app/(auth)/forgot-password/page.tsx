@@ -7,8 +7,11 @@ import {
 import Link from "next/link";
 
 import {
+  ArrowLeft,
+  CheckCircle2,
   Loader2,
   Mail,
+  Send,
 } from "lucide-react";
 
 import {
@@ -112,23 +115,43 @@ export default function ForgotPasswordPage() {
   return (
     <>
       <AuthHeading
-        title="Reset your password"
-        description="Enter your account email and we will send you a secure recovery link."
+        title="Recover your account"
+        description="Enter your registered email address and we will send a secure password recovery link."
       />
 
-      <Card className="border-border/70 shadow-xl shadow-black/5">
+      <Card className="premium-card border-primary/15">
         <CardContent className="p-6 sm:p-7">
           {sent ? (
-            <div className="space-y-5">
-              <div className="rounded-xl border bg-muted/40 p-4 text-sm leading-6">
-                If an account exists
-                for{" "}
-                <span className="font-semibold">
-                  {email}
-                </span>
-                , check the inbox for
-                the password recovery
-                link.
+            <div className="space-y-6">
+              <div className="flex justify-center">
+                <div
+                  className={[
+                    "premium-icon-box",
+                    "flex",
+                    "size-14",
+                    "items-center",
+                    "justify-center",
+                    "rounded-2xl",
+                  ].join(" ")}
+                >
+                  <CheckCircle2 className="size-6" />
+                </div>
+              </div>
+
+              <div className="text-center">
+                <h2 className="text-lg font-bold tracking-[-0.02em]">
+                  Check your inbox
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  If an account exists for{" "}
+
+                  <span className="font-semibold text-foreground">
+                    {email}
+                  </span>
+
+                  , a secure recovery link has been sent.
+                </p>
               </div>
 
               <Link
@@ -137,10 +160,16 @@ export default function ForgotPasswordPage() {
                   buttonVariants({
                     variant:
                       "default",
+
+                    size:
+                      "lg",
                   }),
-                  "w-full"
+
+                  "h-11 w-full"
                 )}
               >
+                <ArrowLeft className="size-4" />
+
                 Back to sign in
               </Link>
             </div>
@@ -152,12 +181,15 @@ export default function ForgotPasswordPage() {
               className="space-y-5"
             >
               <div className="space-y-2">
-                <Label htmlFor="email">
-                  Email
+                <Label
+                  htmlFor="email"
+                  className="text-xs font-semibold"
+                >
+                  Email address
                 </Label>
 
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Mail className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
                   <Input
                     id="email"
@@ -165,7 +197,7 @@ export default function ForgotPasswordPage() {
                     required
                     autoComplete="email"
                     placeholder="you@example.com"
-                    className="h-11 pl-10"
+                    className="h-11 rounded-xl bg-background/55 pl-10"
                     value={
                       email
                     }
@@ -183,26 +215,42 @@ export default function ForgotPasswordPage() {
 
               <Button
                 type="submit"
+                size="lg"
                 className="h-11 w-full"
                 disabled={
                   loading
                 }
               >
-                {loading && (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
+                {loading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
                 )}
 
                 Send recovery link
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground">
-                <Link
-                  href="/login"
-                  className="font-semibold text-primary hover:underline"
-                >
-                  Back to sign in
-                </Link>
-              </p>
+              <Link
+                href="/login"
+                className={[
+                  "flex",
+                  "items-center",
+                  "justify-center",
+                  "gap-2",
+
+                  "text-sm",
+                  "font-semibold",
+                  "text-muted-foreground",
+
+                  "transition-colors",
+
+                  "hover:text-primary",
+                ].join(" ")}
+              >
+                <ArrowLeft className="size-4" />
+
+                Back to sign in
+              </Link>
             </form>
           )}
         </CardContent>

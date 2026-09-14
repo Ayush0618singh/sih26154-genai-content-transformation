@@ -3,16 +3,21 @@ import Link from "next/link";
 import {
   ArrowRight,
   BrainCircuit,
+  CheckCircle2,
   Database,
   FileOutput,
   FileScan,
+  Image,
   Languages,
+  Layers3,
   LockKeyhole,
   Presentation,
   ShieldCheck,
   Sparkles,
+  Table2,
   Video,
   WandSparkles,
+  Zap,
 } from "lucide-react";
 
 import {
@@ -48,63 +53,69 @@ interface LandingPageProps {
 
 const capabilities = [
   {
-    icon: FileScan,
+    icon:
+      FileScan,
 
     title:
-      "Multimodal ingestion",
+      "Multimodal Ingestion",
 
     description:
-      "Process PDFs, DOCX files, text, images and structured tabular data through one ingestion pipeline.",
+      "Understand PDF, DOCX, text, images, spreadsheets, JSON and other structured sources.",
   },
 
   {
-    icon: BrainCircuit,
+    icon:
+      BrainCircuit,
 
     title:
-      "Content intelligence",
+      "Content Intelligence",
 
     description:
-      "Extract important topics, entities, facts, risks, metrics and decision-ready context.",
+      "Extract topics, facts, entities, metrics, risks, recommendations and decision context.",
   },
 
   {
-    icon: Database,
+    icon:
+      Database,
 
     title:
-      "RAG grounded generation",
+      "RAG Grounding",
 
     description:
-      "Chunk, embed and retrieve relevant source evidence before generating transformed content.",
+      "Retrieve relevant source evidence before generating content to improve grounding and traceability.",
   },
 
   {
-    icon: Languages,
+    icon:
+      Languages,
 
     title:
-      "Audience adaptation",
+      "Audience Adaptation",
 
     description:
-      "Control target audience, language, tone, detail level and communication objective.",
+      "Control audience, language, tone, detail level and communication objective.",
   },
 
   {
-    icon: FileOutput,
+    icon:
+      FileOutput,
 
     title:
-      "Multi-format outputs",
+      "Multi-format Generation",
 
     description:
-      "Generate summaries, advisories, social content, presentations, structured data and action items.",
+      "Turn a single source into summaries, advisories, presentations, social content and structured outputs.",
   },
 
   {
-    icon: ShieldCheck,
+    icon:
+      ShieldCheck,
 
     title:
-      "Secure workspace",
+      "Security by Design",
 
     description:
-      "Authenticated access, per-user isolation, private storage and temporary signed downloads.",
+      "Private storage, authenticated APIs, per-user isolation, RLS and temporary signed downloads.",
   },
 ];
 
@@ -117,9 +128,56 @@ const outputTypes = [
   "X Thread",
   "Infographic",
   "Presentation",
-  "Video Package",
+  "Video Script",
   "Action Items",
   "Structured Data",
+];
+
+
+const pipeline = [
+  {
+    number:
+      "01",
+
+    title:
+      "Ingest",
+
+    description:
+      "Documents, images, video and structured data.",
+  },
+
+  {
+    number:
+      "02",
+
+    title:
+      "Understand",
+
+    description:
+      "Multimodal extraction and structured AI analysis.",
+  },
+
+  {
+    number:
+      "03",
+
+    title:
+      "Ground",
+
+    description:
+      "Semantic retrieval connects generation to evidence.",
+  },
+
+  {
+    number:
+      "04",
+
+    title:
+      "Transform",
+
+    description:
+      "Generate audience-ready communication assets.",
+  },
 ];
 
 
@@ -127,9 +185,36 @@ export function LandingPage({
   signedIn,
 }: LandingPageProps) {
   return (
-    <div className="min-h-screen overflow-hidden bg-background">
-      <header className="sticky top-0 z-50 border-b bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-5 sm:px-6 lg:px-8">
+    <div className="premium-page min-h-screen overflow-hidden bg-background">
+      {/* Header */}
+      <header
+        className={[
+          "sticky",
+          "top-0",
+          "z-50",
+
+          "border-b",
+          "border-border/60",
+
+          "bg-background/78",
+          "backdrop-blur-2xl",
+        ].join(" ")}
+      >
+        <div
+          className={[
+            "mx-auto",
+            "flex",
+            "h-[76px]",
+            "max-w-7xl",
+            "items-center",
+            "justify-between",
+            "gap-4",
+
+            "px-5",
+            "sm:px-6",
+            "lg:px-8",
+          ].join(" ")}
+        >
           <AppLogo />
 
           <div className="flex items-center gap-2">
@@ -142,13 +227,17 @@ export function LandingPage({
                   buttonVariants({
                     variant:
                       "default",
+
+                    size:
+                      "lg",
                   }),
+
                   "hidden sm:inline-flex"
                 )}
               >
                 Open Dashboard
 
-                <ArrowRight className="ml-2 size-4" />
+                <ArrowRight className="size-4" />
               </Link>
             ) : (
               <>
@@ -159,24 +248,26 @@ export function LandingPage({
                       variant:
                         "ghost",
                     }),
+
                     "hidden sm:inline-flex"
                   )}
                 >
-                  Sign In
+                  Sign in
                 </Link>
 
                 <Link
                   href="/signup"
-                  className={cn(
-                    buttonVariants({
-                      variant:
-                        "default",
-                    })
-                  )}
+                  className={buttonVariants({
+                    variant:
+                      "default",
+
+                    size:
+                      "lg",
+                  })}
                 >
                   Get Started
 
-                  <ArrowRight className="ml-2 size-4" />
+                  <ArrowRight className="size-4" />
                 </Link>
               </>
             )}
@@ -186,39 +277,84 @@ export function LandingPage({
 
 
       <main>
+        {/* HERO */}
         <section className="relative">
-          <div className="absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute left-1/2 top-0 h-[500px] w-[850px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute left-1/2 top-[-16rem] size-[800px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
 
-            <div className="absolute -left-40 top-80 size-[420px] rounded-full bg-muted blur-3xl" />
+            <div className="absolute -left-52 top-[26rem] size-[460px] rounded-full bg-primary/6 blur-[120px]" />
 
-            <div className="absolute -right-40 top-48 size-[420px] rounded-full bg-accent blur-3xl" />
+            <div className="absolute -right-52 top-40 size-[460px] rounded-full bg-primary/6 blur-[120px]" />
           </div>
 
-          <div className="mx-auto grid min-h-[760px] max-w-7xl items-center gap-14 px-5 py-20 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-28">
+
+          <div
+            className={[
+              "mx-auto",
+              "grid",
+              "max-w-7xl",
+              "items-center",
+              "gap-16",
+
+              "px-5",
+              "py-20",
+
+              "sm:px-6",
+              "sm:py-24",
+
+              "lg:grid-cols-[1.04fr_0.96fr]",
+              "lg:px-8",
+              "lg:py-28",
+            ].join(" ")}
+          >
             <div>
-              <Badge
-                variant="secondary"
-                className="gap-2 px-3 py-1.5"
-              >
+              <div className="premium-kicker">
                 <Sparkles className="size-3.5" />
 
-                SIH26154 · GenAI Content Transformation
-              </Badge>
+                SIH26154 · GenAI Content Intelligence
+              </div>
 
-              <h1 className="mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl lg:leading-[1.08]">
-                Transform complex
-                content into
-                <span className="block text-primary">
-                  communication that matters.
+              <h1
+                className={[
+                  "mt-7",
+                  "max-w-3xl",
+
+                  "text-4xl",
+                  "font-bold",
+                  "leading-[1.06]",
+                  "tracking-[-0.055em]",
+
+                  "sm:text-5xl",
+                  "lg:text-[4.1rem]",
+                ].join(" ")}
+              >
+                One source.
+
+                <span className="gold-text block">
+                  Every useful format.
                 </span>
               </h1>
 
-              <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-                An AI-powered platform that understands source content, grounds generation using retrieval, adapts communication for different audiences and creates multiple publication-ready formats from a single source.
+              <p
+                className={[
+                  "mt-7",
+                  "max-w-2xl",
+
+                  "text-base",
+                  "leading-8",
+                  "text-muted-foreground",
+
+                  "sm:text-lg",
+                ].join(" ")}
+              >
+                TransformAI understands complex source content,
+                grounds generation in retrieved evidence and creates
+                professional communication for different audiences,
+                channels and objectives.
               </p>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href={
                     signedIn
@@ -230,16 +366,17 @@ export function LandingPage({
                       size:
                         "lg",
                     }),
+
                     "h-12 px-6"
                   )}
                 >
-                  <WandSparkles className="mr-2 size-4" />
+                  <WandSparkles className="size-4" />
 
                   {signedIn
                     ? "Start Transforming"
                     : "Create Workspace"}
 
-                  <ArrowRight className="ml-2 size-4" />
+                  <ArrowRight className="size-4" />
                 </Link>
 
                 <Link
@@ -252,9 +389,11 @@ export function LandingPage({
                     buttonVariants({
                       variant:
                         "outline",
+
                       size:
                         "lg",
                     }),
+
                     "h-12 px-6"
                   )}
                 >
@@ -264,7 +403,20 @@ export function LandingPage({
                 </Link>
               </div>
 
-              <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
+
+              <div
+                className={[
+                  "mt-9",
+                  "flex",
+                  "flex-wrap",
+                  "gap-x-6",
+                  "gap-y-3",
+
+                  "text-xs",
+                  "font-medium",
+                  "text-muted-foreground",
+                ].join(" ")}
+              >
                 <span className="flex items-center gap-2">
                   <ShieldCheck className="size-4 text-primary" />
 
@@ -274,142 +426,209 @@ export function LandingPage({
                 <span className="flex items-center gap-2">
                   <Database className="size-4 text-primary" />
 
-                  RAG grounding
+                  RAG grounded
                 </span>
 
                 <span className="flex items-center gap-2">
                   <Languages className="size-4 text-primary" />
 
-                  Multilingual
+                  Audience adaptive
                 </span>
               </div>
             </div>
 
 
+            {/* Hero product preview */}
             <div className="relative mx-auto w-full max-w-xl">
-              <div className="absolute -inset-5 -z-10 rounded-[2rem] bg-primary/10 blur-2xl" />
+              <div className="absolute -inset-8 -z-10 rounded-[3rem] bg-primary/10 blur-3xl" />
 
-              <Card className="overflow-hidden border-border/70 bg-card/90 shadow-2xl shadow-black/10 backdrop-blur">
-                <div className="border-b bg-muted/20 px-5 py-4">
-                  <div className="flex items-center justify-between">
-                    <div>
+              <Card
+                className={[
+                  "premium-card",
+                  "overflow-hidden",
+
+                  "border-primary/20",
+
+                  "shadow-[0_40px_120px_-65px_rgba(0,0,0,0.65)]",
+                ].join(" ")}
+              >
+                <div
+                  className={[
+                    "flex",
+                    "items-center",
+                    "justify-between",
+                    "gap-4",
+
+                    "border-b",
+                    "border-border/70",
+
+                    "bg-muted/20",
+
+                    "px-5",
+                    "py-4",
+                  ].join(" ")}
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="size-2 rounded-full bg-primary shadow-[0_0_12px_var(--primary)]" />
+
                       <p className="text-sm font-semibold">
                         Transformation Pipeline
                       </p>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Source → Intelligence → Grounding → Outputs
-                      </p>
                     </div>
 
-                    <Badge variant="secondary">
-                      AI
-                    </Badge>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Source → Intelligence → Grounding → Output
+                    </p>
                   </div>
+
+                  <Badge
+                    variant="secondary"
+                    className="border border-primary/20 bg-primary/10 text-primary"
+                  >
+                    LIVE AI
+                  </Badge>
                 </div>
 
+
                 <CardContent className="space-y-4 p-5 sm:p-6">
-                  <div className="rounded-2xl border bg-background p-4">
+                  <div
+                    className={[
+                      "rounded-2xl",
+
+                      "border",
+                      "border-border/70",
+
+                      "bg-background/70",
+
+                      "p-4",
+                    ].join(" ")}
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <div className="premium-icon-box size-10 rounded-xl">
                         <FileScan className="size-5" />
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-semibold">
-                          Source Intelligence
+                          Multimodal Source
                         </p>
 
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          OCR · Documents · Images · Structured Data
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                          PDF · DOCX · Image · Video · CSV · XLSX · JSON
                         </p>
                       </div>
                     </div>
                   </div>
 
+
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border bg-background p-4">
+                    <div className="rounded-2xl border border-border/70 bg-background/65 p-4">
                       <BrainCircuit className="size-5 text-primary" />
 
                       <p className="mt-4 text-sm font-semibold">
-                        AI Analysis
+                        Content Intelligence
                       </p>
 
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        Facts, entities, metrics, topics and risks.
+                        Facts, topics, metrics, entities, risks and evidence.
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border bg-background p-4">
+                    <div className="rounded-2xl border border-border/70 bg-background/65 p-4">
                       <Database className="size-5 text-primary" />
 
                       <p className="mt-4 text-sm font-semibold">
-                        RAG Context
+                        Retrieval Grounding
                       </p>
 
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        Semantic retrieval from the original source.
+                        Semantic retrieval connects outputs to source context.
                       </p>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border bg-primary/5 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                      Generated Assets
-                    </p>
 
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {[
-                        "Summary",
-                        "Advisory",
-                        "LinkedIn",
-                        "Presentation",
-                        "Infographic",
-                        "Video Script",
-                      ].map(
-                        (
-                          item
-                        ) => (
-                          <Badge
+                  <div
+                    className={[
+                      "rounded-2xl",
+
+                      "border",
+                      "border-primary/20",
+
+                      "bg-primary/7",
+
+                      "p-4",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Presentation className="size-5 text-primary" />
+
+                        <div>
+                          <p className="text-sm font-semibold">
+                            Audience-ready Output
+                          </p>
+
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Executive Summary · Presentation · Advisory
+                          </p>
+                        </div>
+                      </div>
+
+                      <CheckCircle2 className="size-5 text-primary" />
+                    </div>
+                  </div>
+
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      {
+                        icon:
+                          Image,
+
+                        label:
+                          "Vision",
+                      },
+
+                      {
+                        icon:
+                          Video,
+
+                        label:
+                          "Video",
+                      },
+
+                      {
+                        icon:
+                          Table2,
+
+                        label:
+                          "Data",
+                      },
+                    ].map(
+                      (
+                        item
+                      ) => {
+                        const Icon =
+                          item.icon;
+
+                        return (
+                          <div
                             key={
-                              item
+                              item.label
                             }
-                            variant="outline"
-                            className="bg-background"
+                            className="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/20 px-2 py-2.5 text-[11px] font-semibold text-muted-foreground"
                           >
+                            <Icon className="size-3.5 text-primary" />
+
                             {
-                              item
+                              item.label
                             }
-                          </Badge>
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded-xl border bg-background p-3 text-center">
-                      <FileOutput className="mx-auto size-4 text-primary" />
-
-                      <p className="mt-2 text-[11px] font-medium">
-                        PDF / DOCX
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border bg-background p-3 text-center">
-                      <Presentation className="mx-auto size-4 text-primary" />
-
-                      <p className="mt-2 text-[11px] font-medium">
-                        PPTX
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border bg-background p-3 text-center">
-                      <Video className="mx-auto size-4 text-primary" />
-
-                      <p className="mt-2 text-[11px] font-medium">
-                        SRT
-                      </p>
-                    </div>
+                          </div>
+                        );
+                      }
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -418,94 +637,173 @@ export function LandingPage({
         </section>
 
 
-        <section className="border-y bg-muted/20">
-          <div className="mx-auto max-w-7xl px-5 py-20 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-3xl text-center">
-              <Badge variant="outline">
-                Core Capabilities
-              </Badge>
+        {/* Pipeline */}
+        <section className="border-y border-border/60 bg-muted/15">
+          <div className="mx-auto max-w-7xl px-5 py-14 sm:px-6 lg:px-8">
+            <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div>
+                <div className="premium-kicker">
+                  <Layers3 className="size-3.5" />
 
-              <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-                One platform. One source. Many useful outcomes.
-              </h2>
+                  Intelligent Pipeline
+                </div>
 
-              <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
-                The pipeline combines content extraction, structured intelligence, semantic retrieval and controlled generation instead of treating content transformation as a simple chatbot prompt.
+                <h2 className="mt-4 text-2xl font-bold tracking-[-0.04em] sm:text-3xl">
+                  From raw content to useful communication.
+                </h2>
+              </div>
+
+              <p className="max-w-md text-sm leading-6 text-muted-foreground">
+                Each stage is engineered to preserve context,
+                improve grounding and deliver structured results.
               </p>
             </div>
 
-            <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {capabilities.map(
+
+            <div className="grid gap-3 md:grid-cols-4">
+              {pipeline.map(
                 (
-                  capability
-                ) => {
-                  const Icon =
-                    capability.icon;
-
-                  return (
-                    <Card
-                      key={
-                        capability.title
+                  step
+                ) => (
+                  <div
+                    key={
+                      step.number
+                    }
+                    className={[
+                      "premium-card",
+                      "relative",
+                      "rounded-2xl",
+                      "p-5",
+                    ].join(" ")}
+                  >
+                    <span className="text-xs font-bold tracking-[0.15em] text-primary">
+                      {
+                        step.number
                       }
-                      className="border-border/70"
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                          <Icon className="size-5" />
-                        </div>
+                    </span>
 
-                        <h3 className="mt-5 font-semibold">
-                          {
-                            capability.title
-                          }
-                        </h3>
+                    <h3 className="mt-5 text-base font-semibold">
+                      {
+                        step.title
+                      }
+                    </h3>
 
-                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                          {
-                            capability.description
-                          }
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                }
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {
+                        step.description
+                      }
+                    </p>
+                  </div>
+                )
               )}
             </div>
           </div>
         </section>
 
 
-        <section className="mx-auto max-w-7xl px-5 py-20 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-            <div>
-              <Badge variant="secondary">
-                Multi-output Engine
-              </Badge>
+        {/* Capabilities */}
+        <section
+          id="capabilities"
+          className="mx-auto max-w-7xl px-5 py-20 sm:px-6 lg:px-8 lg:py-24"
+        >
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="premium-kicker">
+              <Zap className="size-3.5" />
 
-              <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-                Communicate the same intelligence differently for every channel.
+              Platform Capabilities
+            </div>
+
+            <h2
+              className={[
+                "mt-5",
+                "text-3xl",
+                "font-bold",
+                "tracking-[-0.045em]",
+
+                "sm:text-4xl",
+              ].join(" ")}
+            >
+              Built for real-world content transformation.
+            </h2>
+
+            <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
+              A complete AI workflow covering ingestion, understanding,
+              grounding, generation, export and secure management.
+            </p>
+          </div>
+
+
+          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {capabilities.map(
+              (
+                capability
+              ) => {
+                const Icon =
+                  capability.icon;
+
+                return (
+                  <Card
+                    key={
+                      capability.title
+                    }
+                    className={[
+                      "group",
+                      "premium-card",
+                      "p-0",
+
+                      "transition-all",
+                      "duration-300",
+
+                      "hover:-translate-y-1",
+                      "hover:border-primary/25",
+                    ].join(" ")}
+                  >
+                    <CardContent className="p-6">
+                      <div className="premium-icon-box size-11 rounded-xl">
+                        <Icon className="size-5" />
+                      </div>
+
+                      <h3 className="mt-5 text-base font-semibold tracking-[-0.02em]">
+                        {
+                          capability.title
+                        }
+                      </h3>
+
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                        {
+                          capability.description
+                        }
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              }
+            )}
+          </div>
+        </section>
+
+
+        {/* Outputs */}
+        <section className="border-y border-border/60 bg-muted/15">
+          <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8 lg:py-24">
+            <div>
+              <div className="premium-kicker">
+                <FileOutput className="size-3.5" />
+
+                One Source
+              </div>
+
+              <h2 className="mt-5 text-3xl font-bold tracking-[-0.045em] sm:text-4xl">
+                Publish across formats without losing context.
               </h2>
 
-              <p className="mt-5 text-sm leading-7 text-muted-foreground sm:text-base">
-                Choose the audience, tone, language, objective and detail level once. The platform then produces multiple structured communication assets while preserving the important source context.
+              <p className="mt-5 max-w-lg text-sm leading-7 text-muted-foreground">
+                Configure audience, tone, language, objective and
+                detail once, then generate channel-ready outputs
+                grounded in the same source intelligence.
               </p>
-
-              <div className="mt-7 rounded-2xl border bg-muted/20 p-5">
-                <div className="flex items-start gap-3">
-                  <LockKeyhole className="mt-0.5 size-5 shrink-0 text-primary" />
-
-                  <div>
-                    <p className="text-sm font-semibold">
-                      Privacy-conscious architecture
-                    </p>
-
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      User-owned records, authenticated APIs, Row Level Security, private object storage and temporary download URLs keep workspace data isolated.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
+
 
             <div className="grid gap-3 sm:grid-cols-2">
               {outputTypes.map(
@@ -517,23 +815,52 @@ export function LandingPage({
                     key={
                       output
                     }
-                    className="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm"
+                    className={[
+                      "flex",
+                      "items-center",
+                      "gap-3",
+
+                      "rounded-xl",
+
+                      "border",
+                      "border-border/70",
+
+                      "bg-card/70",
+
+                      "px-4",
+                      "py-3.5",
+
+                      "backdrop-blur-xl",
+                    ].join(" ")}
                   >
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">
+                    <span
+                      className={[
+                        "flex",
+                        "size-7",
+                        "shrink-0",
+                        "items-center",
+                        "justify-center",
+
+                        "rounded-lg",
+
+                        "bg-primary/10",
+
+                        "text-[10px]",
+                        "font-bold",
+                        "text-primary",
+                      ].join(" ")}
+                    >
                       {String(
-                        index +
-                          1
+                        index + 1
                       ).padStart(
                         2,
                         "0"
                       )}
                     </span>
 
-                    <p className="text-sm font-semibold">
-                      {
-                        output
-                      }
-                    </p>
+                    <span className="text-sm font-semibold">
+                      {output}
+                    </span>
                   </div>
                 )
               )}
@@ -542,21 +869,104 @@ export function LandingPage({
         </section>
 
 
-        <section className="border-t bg-muted/20">
-          <div className="mx-auto max-w-5xl px-5 py-20 text-center sm:px-6 lg:px-8">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <Sparkles className="size-7" />
-            </div>
+        {/* Security */}
+        <section className="mx-auto max-w-7xl px-5 py-20 sm:px-6 lg:px-8 lg:py-24">
+          <Card className="premium-card relative overflow-hidden border-primary/20">
+            <div className="pointer-events-none absolute -right-40 -top-40 size-[420px] rounded-full bg-primary/10 blur-[100px]" />
 
-            <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
-              From raw source to usable communication.
-            </h2>
+            <CardContent className="relative grid gap-10 p-7 sm:p-10 lg:grid-cols-[1fr_0.9fr] lg:p-12">
+              <div>
+                <div className="premium-kicker">
+                  <LockKeyhole className="size-3.5" />
 
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-              Build grounded summaries, advisories, presentations, publication content and structured assets from one secure workspace.
-            </p>
+                  Secure Architecture
+                </div>
 
-            <div className="mt-8 flex justify-center">
+                <h2 className="mt-5 max-w-xl text-3xl font-bold tracking-[-0.045em]">
+                  AI capability without treating privacy as an afterthought.
+                </h2>
+
+                <p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground">
+                  Authentication, row-level security, user-scoped
+                  data access, private storage, signed download URLs
+                  and upload validation are built into the platform.
+                </p>
+              </div>
+
+
+              <div className="grid gap-3">
+                {[
+                  "Authenticated API access",
+                  "Per-user database isolation",
+                  "Private source and output storage",
+                  "Temporary signed download URLs",
+                  "File signature and upload validation",
+                ].map(
+                  (
+                    item
+                  ) => (
+                    <div
+                      key={
+                        item
+                      }
+                      className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/55 px-4 py-3"
+                    >
+                      <CheckCircle2 className="size-4 shrink-0 text-primary" />
+
+                      <span className="text-sm font-medium">
+                        {item}
+                      </span>
+                    </div>
+                  )
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+
+        {/* CTA */}
+        <section className="px-5 pb-20 sm:px-6 lg:px-8 lg:pb-24">
+          <div
+            className={[
+              "relative",
+              "mx-auto",
+              "max-w-7xl",
+              "overflow-hidden",
+
+              "rounded-[2rem]",
+
+              "border",
+              "border-primary/25",
+
+              "bg-gradient-to-br",
+              "from-primary/12",
+              "via-card",
+              "to-card",
+
+              "px-6",
+              "py-12",
+
+              "text-center",
+
+              "sm:px-10",
+              "sm:py-16",
+            ].join(" ")}
+          >
+            <div className="pointer-events-none absolute left-1/2 top-[-15rem] size-[500px] -translate-x-1/2 rounded-full bg-primary/15 blur-[110px]" />
+
+            <div className="relative">
+              <Sparkles className="mx-auto size-6 text-primary" />
+
+              <h2 className="mt-5 text-3xl font-bold tracking-[-0.045em] sm:text-4xl">
+                Turn information into impact.
+              </h2>
+
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-muted-foreground">
+                Start with one source and create grounded,
+                professional communication across multiple formats.
+              </p>
+
               <Link
                 href={
                   signedIn
@@ -568,16 +978,17 @@ export function LandingPage({
                     size:
                       "lg",
                   }),
-                  "h-12 px-7"
+
+                  "mt-7 h-12 px-7"
                 )}
               >
-                <WandSparkles className="mr-2 size-4" />
+                <WandSparkles className="size-4" />
 
                 {signedIn
                   ? "Open Transform Studio"
-                  : "Start Transforming"}
+                  : "Create Your Workspace"}
 
-                <ArrowRight className="ml-2 size-4" />
+                <ArrowRight className="size-4" />
               </Link>
             </div>
           </div>
@@ -585,13 +996,33 @@ export function LandingPage({
       </main>
 
 
-      <footer className="border-t">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 px-5 py-8 sm:px-6 md:flex-row md:items-center lg:px-8">
+      {/* Footer */}
+      <footer className="border-t border-border/60">
+        <div
+          className={[
+            "mx-auto",
+            "flex",
+            "max-w-7xl",
+            "flex-col",
+            "gap-4",
+
+            "px-5",
+            "py-8",
+
+            "sm:px-6",
+
+            "md:flex-row",
+            "md:items-center",
+            "md:justify-between",
+
+            "lg:px-8",
+          ].join(" ")}
+        >
           <AppLogo />
 
-          <div className="text-sm text-muted-foreground">
-            GenAI Platform for Automated Content Transformation · SIH26154
-          </div>
+          <p className="text-xs text-muted-foreground">
+            SIH26154 · GenAI Platform for Automated Content Transformation
+          </p>
         </div>
       </footer>
     </div>

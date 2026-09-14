@@ -9,6 +9,10 @@ import {
 } from "next/navigation";
 
 import {
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
   Loader2,
   LockKeyhole,
 } from "lucide-react";
@@ -60,6 +64,16 @@ export default function ResetPasswordPage() {
   const [
     loading,
     setLoading,
+  ] = useState(false);
+
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
+
+  const [
+    showConfirmPassword,
+    setShowConfirmPassword,
   ] = useState(false);
 
 
@@ -130,15 +144,49 @@ export default function ResetPasswordPage() {
   }
 
 
+  const passwordsMatch =
+    Boolean(
+      confirmPassword
+    ) &&
+    password ===
+      confirmPassword;
+
+
   return (
     <>
       <AuthHeading
-        title="Choose a new password"
-        description="Set a strong password for your TransformAI account."
+        title="Create a new password"
+        description="Secure your TransformAI account with a new password of at least eight characters."
       />
 
-      <Card className="border-border/70 shadow-xl shadow-black/5">
+      <Card className="premium-card border-primary/15">
         <CardContent className="p-6 sm:p-7">
+          <div
+            className={[
+              "mb-6",
+              "flex",
+              "items-center",
+              "gap-3",
+
+              "rounded-xl",
+
+              "border",
+              "border-primary/15",
+
+              "bg-primary/5",
+
+              "p-3.5",
+            ].join(" ")}
+          >
+            <KeyRound className="size-4 text-primary" />
+
+            <p className="text-xs leading-5 text-muted-foreground">
+              Your new password will immediately replace your
+              existing account password.
+            </p>
+          </div>
+
+
           <form
             onSubmit={
               handleSubmit
@@ -146,20 +194,28 @@ export default function ResetPasswordPage() {
             className="space-y-5"
           >
             <div className="space-y-2">
-              <Label htmlFor="password">
+              <Label
+                htmlFor="password"
+                className="text-xs font-semibold"
+              >
                 New password
               </Label>
 
               <div className="relative">
-                <LockKeyhole className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <LockKeyhole className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
                 <Input
                   id="password"
-                  type="password"
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className="h-11 pl-10"
+                  placeholder="Minimum 8 characters"
+                  className="h-11 rounded-xl bg-background/55 pl-10 pr-11"
                   value={
                     password
                   }
@@ -172,24 +228,53 @@ export default function ResetPasswordPage() {
                     )
                   }
                 />
+
+                <button
+                  type="button"
+                  aria-label="Toggle password visibility"
+                  className="absolute right-3 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() =>
+                    setShowPassword(
+                      (
+                        current
+                      ) =>
+                        !current
+                    )
+                  }
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
               </div>
             </div>
 
+
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">
-                Confirm password
+              <Label
+                htmlFor="confirmPassword"
+                className="text-xs font-semibold"
+              >
+                Confirm new password
               </Label>
 
               <div className="relative">
-                <LockKeyhole className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <LockKeyhole className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
                 <Input
                   id="confirmPassword"
-                  type="password"
+                  type={
+                    showConfirmPassword
+                      ? "text"
+                      : "password"
+                  }
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className="h-11 pl-10"
+                  placeholder="Repeat new password"
+                  className="h-11 rounded-xl bg-background/55 pl-10 pr-11"
                   value={
                     confirmPassword
                   }
@@ -202,18 +287,50 @@ export default function ResetPasswordPage() {
                     )
                   }
                 />
+
+                <button
+                  type="button"
+                  aria-label="Toggle confirmation password visibility"
+                  className="absolute right-3 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() =>
+                    setShowConfirmPassword(
+                      (
+                        current
+                      ) =>
+                        !current
+                    )
+                  }
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
               </div>
+
+              {passwordsMatch && (
+                <div className="flex items-center gap-2 text-[11px] font-medium text-primary">
+                  <CheckCircle2 className="size-3.5" />
+
+                  Passwords match
+                </div>
+              )}
             </div>
+
 
             <Button
               type="submit"
+              size="lg"
               className="h-11 w-full"
               disabled={
                 loading
               }
             >
-              {loading && (
-                <Loader2 className="mr-2 size-4 animate-spin" />
+              {loading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <KeyRound className="size-4" />
               )}
 
               Update password

@@ -1,401 +1,1196 @@
-from uuid import UUID
+from __future__ import annotations
 
-from app.core.config import settings
+import asyncio
+import hashlib
+import logging
+import os
+
+from typing import (
+    Any,
+)
+
+from uuid import (
+    UUID,
+)
+
+from google import (
+    genai,
+)
+
+from google.genai import (
+    types,
+)
+
+from langchain_text_splitters import (
+    RecursiveCharacterTextSplitter,
+)
+
+from app.core.config import (
+    settings,
+)
+
 from app.core.supabase import (
     get_supabase_admin_client,
 )
-from app.schemas.rag import RetrievedChunk
-from app.services.rag.chroma_service import (
-    chroma_service,
-)
-from app.services.rag.chunker import (
-    document_chunker,
-)
-from app.services.rag.embedding_service import (
-    embedding_service,
+
+
+logger = logging.getLogger(
+    __name__
 )
 
 
-class RAGService:
+class RagServiceError(
+    RuntimeError
+):
+    pass
 
-    def __init__(self) -> None:
-        self.admin = (
+
+def prepare_embedding_document(
+    content: str,
+    title: str | None = None,
+) -> str:
+
+    normalized_title = (
+        title.strip()
+        if (
+            title
+            and title.strip()
+        )
+        else "none"
+    )
+
+    return (
+        f"title: {normalized_title} "
+        f"| text: {content}"
+    )
+
+
+def prepare_embedding_query(
+    query: str,
+) -> str:
+
+    return (
+        "task: search result "
+        f"| query: {query}"
+    )
+
+
+def split_rag_text(
+    text: str,
+) -> list[str]:
+
+    splitter = (
+        RecursiveCharacterTextSplitter(
+            chunk_size=(
+                settings.rag_chunk_size
+            ),
+
+            chunk_overlap=(
+                settings.rag_chunk_overlap
+            ),
+
+            separators=[
+                "\n\n",
+                "\n",
+                ". ",
+                " ",
+                "",
+            ],
+        )
+    )
+
+
+    return [
+        chunk.strip()
+
+        for chunk
+        in splitter.split_text(
+            text
+        )
+
+        if chunk.strip()
+    ]
+
+
+class RagService:
+
+    def __init__(
+        self,
+    ) -> None:
+
+        self._gemini_client: (
+            genai.Client | None
+        ) = None
+
+
+    def _client(
+        self,
+    ) -> genai.Client:
+
+        if self._gemini_client is None:
+
+            if not settings.gemini_api_key:
+
+                raise RagServiceError(
+                    "GEMINI_API_KEY "
+                    "is not configured."
+                )
+
+
+            self._gemini_client = (
+                genai.Client(
+                    api_key=(
+                        settings.gemini_api_key
+                    )
+                )
+            )
+
+
+        return self._gemini_client
+
+
+    @property
+    def embedding_model(
+        self,
+    ) -> str:
+
+        return (
+            settings
+            .gemini_embedding_model
+        )
+
+
+    @property
+    def embedding_dimensions(
+        self,
+    ) -> int:
+
+        return int(
+            settings
+            .gemini_embedding_dimensions
+        )
+
+
+    @property
+    def embed_concurrency(
+        self,
+    ) -> int:
+
+        raw = os.getenv(
+            "RAG_EMBED_CONCURRENCY",
+            "4",
+        )
+
+        try:
+
+            value = int(
+                raw
+            )
+
+        except ValueError:
+
+            value = 4
+
+
+        return max(
+            1,
+            min(
+                value,
+                8,
+            ),
+        )
+
+
+    @property
+    def default_min_similarity(
+        self,
+    ) -> float:
+
+        raw = os.getenv(
+            "RAG_MIN_SIMILARITY",
+            "0.20",
+        )
+
+        try:
+
+            value = float(
+                raw
+            )
+
+        except ValueError:
+
+            value = 0.20
+
+
+        return max(
+            0.0,
+            min(
+                value,
+                1.0,
+            ),
+        )
+
+
+    def _embed_sync(
+        self,
+        *,
+        text: str,
+        purpose: str,
+        title: str | None = None,
+    ) -> list[float]:
+
+        client = (
+            self._client()
+        )
+
+
+        model_name = (
+            self.embedding_model
+        )
+
+
+        is_embedding_2 = (
+            "embedding-2"
+            in model_name.lower()
+        )
+
+
+        if purpose == "document":
+
+            input_text = (
+                prepare_embedding_document(
+                    text,
+                    title,
+                )
+                if is_embedding_2
+                else text
+            )
+
+        elif purpose == "query":
+
+            input_text = (
+                prepare_embedding_query(
+                    text
+                )
+                if is_embedding_2
+                else text
+            )
+
+        else:
+
+            raise ValueError(
+                "purpose must be "
+                "'document' or 'query'."
+            )
+
+
+        config_kwargs: dict[
+            str,
+            Any,
+        ] = {
+            "output_dimensionality":
+                self.embedding_dimensions,
+        }
+
+
+        # Gemini Embedding 2 uses task instructions
+        # directly in text rather than task_type.
+        #
+        # Earlier embedding models use task_type.
+
+        if not is_embedding_2:
+
+            config_kwargs[
+                "task_type"
+            ] = (
+                "RETRIEVAL_DOCUMENT"
+                if purpose
+                == "document"
+                else "RETRIEVAL_QUERY"
+            )
+
+
+            if (
+                purpose
+                == "document"
+                and title
+            ):
+
+                config_kwargs[
+                    "title"
+                ] = title
+
+
+        result = (
+            client.models.embed_content(
+                model=(
+                    model_name
+                ),
+
+                contents=(
+                    input_text
+                ),
+
+                config=(
+                    types.EmbedContentConfig(
+                        **config_kwargs
+                    )
+                ),
+            )
+        )
+
+
+        embeddings = (
+            result.embeddings
+            or []
+        )
+
+
+        if not embeddings:
+
+            raise RagServiceError(
+                "Gemini returned "
+                "no embedding."
+            )
+
+
+        values = (
+            embeddings[
+                0
+            ].values
+        )
+
+
+        if not values:
+
+            raise RagServiceError(
+                "Gemini returned an "
+                "empty embedding."
+            )
+
+
+        vector = [
+            float(
+                value
+            )
+            for value
+            in values
+        ]
+
+
+        if (
+            len(
+                vector
+            )
+            != self.embedding_dimensions
+        ):
+
+            raise RagServiceError(
+                (
+                    "Embedding dimension mismatch. "
+                    f"Expected "
+                    f"{self.embedding_dimensions}, "
+                    f"received "
+                    f"{len(vector)}."
+                )
+            )
+
+
+        return vector
+
+
+    async def _embed(
+        self,
+        *,
+        text: str,
+        purpose: str,
+        title: str | None = None,
+    ) -> list[float]:
+
+        return await asyncio.to_thread(
+            self._embed_sync,
+
+            text=(
+                text
+            ),
+
+            purpose=(
+                purpose
+            ),
+
+            title=(
+                title
+            ),
+        )
+
+
+    async def _embed_document_chunks(
+        self,
+        *,
+        chunks: list[str],
+        title: str | None,
+    ) -> list[
+        list[float]
+    ]:
+
+        semaphore = (
+            asyncio.Semaphore(
+                self.embed_concurrency
+            )
+        )
+
+
+        async def embed_one(
+            chunk: str,
+        ) -> list[float]:
+
+            async with semaphore:
+
+                return await self._embed(
+                    text=(
+                        chunk
+                    ),
+
+                    purpose=(
+                        "document"
+                    ),
+
+                    title=(
+                        title
+                    ),
+                )
+
+
+        return list(
+            await asyncio.gather(
+                *[
+                    embed_one(
+                        chunk
+                    )
+                    for chunk
+                    in chunks
+                ]
+            )
+        )
+
+
+    def _set_index_state(
+        self,
+        *,
+        user_id: str,
+        document_id: str,
+        status: str,
+        chunk_count: int,
+    ) -> None:
+
+        admin = (
             get_supabase_admin_client()
         )
 
-    def _get_document(
-        self,
-        document_id: UUID,
-        user_id: UUID,
-    ) -> dict:
-        response = (
-            self.admin.table(
-                "source_documents"
+
+        (
+            admin
+            .table(
+                "rag_indexes"
             )
-            .select(
-                "id, user_id, original_filename, "
-                "status, extracted_text"
+            .upsert(
+                {
+                    "user_id":
+                        user_id,
+
+                    "source_document_id":
+                        document_id,
+
+                    "status":
+                        status,
+
+                    "chunk_count":
+                        chunk_count,
+                },
+
+                on_conflict=(
+                    "source_document_id"
+                ),
             )
-            .eq(
-                "id",
-                str(document_id),
-            )
-            .eq(
-                "user_id",
-                str(user_id),
-            )
-            .limit(1)
             .execute()
         )
 
-        if not response.data:
+
+    async def index_document(
+        self,
+        *,
+        document_id:
+            UUID | str,
+
+        user_id:
+            UUID | str,
+    ) -> dict[
+        str,
+        Any,
+    ]:
+
+        admin = (
+            get_supabase_admin_client()
+        )
+
+
+        document_id_str = str(
+            document_id
+        )
+
+        user_id_str = str(
+            user_id
+        )
+
+
+        response = (
+            admin
+            .table(
+                "source_documents"
+            )
+            .select(
+                (
+                    "id,"
+                    "user_id,"
+                    "original_filename,"
+                    "input_type,"
+                    "status,"
+                    "extracted_text,"
+                    "metadata"
+                )
+            )
+            .eq(
+                "id",
+                document_id_str,
+            )
+            .eq(
+                "user_id",
+                user_id_str,
+            )
+            .limit(
+                1
+            )
+            .execute()
+        )
+
+
+        rows = (
+            response.data
+            or []
+        )
+
+
+        if not rows:
+
             raise ValueError(
                 "Document not found."
             )
 
-        document = response.data[0]
 
-        if document.get("status") != "ready":
-            raise ValueError(
+        document = (
+            rows[
+                0
+            ]
+        )
+
+
+        if (
+            document.get(
+                "status"
+            )
+            != "ready"
+        ):
+
+            raise RagServiceError(
                 "Document is not ready "
                 "for RAG indexing."
             )
 
-        if not (
+
+        text = (
             document.get(
                 "extracted_text"
             )
             or ""
-        ).strip():
-            raise ValueError(
+        ).strip()
+
+
+        if not text:
+
+            raise RagServiceError(
                 "Document contains no "
                 "extracted text."
             )
 
-        return document
 
-    def _get_index_record(
-        self,
-        document_id: UUID,
-        user_id: UUID,
-    ) -> dict | None:
-        response = (
-            self.admin.table(
-                "rag_indexes"
-            )
-            .select("*")
-            .eq(
-                "source_document_id",
-                str(document_id),
-            )
-            .eq(
-                "user_id",
-                str(user_id),
-            )
-            .limit(1)
-            .execute()
-        )
-
-        if not response.data:
-            return None
-
-        return response.data[0]
-
-    async def ensure_index(
-        self,
-        document_id: UUID,
-        user_id: UUID,
-        force: bool = False,
-    ) -> tuple[str, int]:
-        existing = self._get_index_record(
-            document_id,
-            user_id,
-        )
-
-        if (
-            existing
-            and existing.get("status")
-            == "ready"
-            and not force
-        ):
-            return (
-                str(
-                    existing[
-                        "collection_name"
-                    ]
-                ),
-                int(
-                    existing.get(
-                        "chunk_count"
-                    )
-                    or 0
-                ),
-            )
-
-        document = self._get_document(
-            document_id,
-            user_id,
-        )
-
-        collection_name = (
-            chroma_service
-            .collection_name_for_document(
-                str(document_id)
+        title = (
+            document.get(
+                "original_filename"
             )
         )
 
-        if force:
-            await (
-                chroma_service
-                .delete_collection(
-                    collection_name
-                )
+
+        chunks = (
+            split_rag_text(
+                text
+            )
+        )
+
+
+        if not chunks:
+
+            raise RagServiceError(
+                "No RAG chunks could "
+                "be created."
             )
 
-        if existing:
-            (
-                self.admin.table(
-                    "rag_indexes"
-                )
-                .update(
-                    {
-                        "status": "indexing",
-                        "collection_name": (
-                            collection_name
-                        ),
-                        "chunk_count": 0,
-                    }
-                )
-                .eq(
-                    "id",
-                    existing["id"],
-                )
-                .execute()
-            )
-        else:
-            (
-                self.admin.table(
-                    "rag_indexes"
-                )
-                .insert(
-                    {
-                        "user_id": str(
-                            user_id
-                        ),
-                        "source_document_id": str(
-                            document_id
-                        ),
-                        "provider": (
-                            settings.vector_store_provider
-                        ),
-                        "collection_name": (
-                            collection_name
-                        ),
-                        "chunk_count": 0,
-                        "status": "indexing",
-                    }
-                )
-                .execute()
-            )
+
+        self._set_index_state(
+            user_id=(
+                user_id_str
+            ),
+
+            document_id=(
+                document_id_str
+            ),
+
+            status=(
+                "indexing"
+            ),
+
+            chunk_count=(
+                0
+            ),
+        )
+
 
         try:
-            chunks = document_chunker.split(
-                document[
-                    "extracted_text"
-                ]
-            )
-
-            if not chunks:
-                raise ValueError(
-                    "No text chunks were "
-                    "created."
-                )
-
-            texts = [
-                chunk.text
-                for chunk in chunks
-            ]
 
             embeddings = (
-                await embedding_service
-                .embed_documents(
-                    texts
+                await self
+                ._embed_document_chunks(
+                    chunks=(
+                        chunks
+                    ),
+
+                    title=(
+                        title
+                    ),
                 )
             )
 
-            ids = [
+
+            records: list[
+                dict[
+                    str,
+                    Any,
+                ]
+            ] = []
+
+
+            source_metadata = (
+                document.get(
+                    "metadata"
+                )
+                or {}
+            )
+
+
+            for (
+                index,
                 (
-                    f"{document_id}"
-                    f"_chunk_{chunk.index}"
-                )
-                for chunk in chunks
-            ]
-
-            metadatas = [
-                {
-                    "document_id": str(
-                        document_id
-                    ),
-                    "user_id": str(
-                        user_id
-                    ),
-                    "filename": str(
-                        document[
-                            "original_filename"
-                        ]
-                    ),
-                    "chunk_index": (
-                        chunk.index
-                    ),
-                }
-                for chunk in chunks
-            ]
-
-            await chroma_service.upsert(
-                collection_name=(
-                    collection_name
+                    chunk,
+                    embedding,
                 ),
-                ids=ids,
-                texts=texts,
-                embeddings=embeddings,
-                metadatas=metadatas,
-            )
-
-            (
-                self.admin.table(
-                    "rag_indexes"
+            ) in enumerate(
+                zip(
+                    chunks,
+                    embeddings,
+                    strict=True,
                 )
-                .update(
+            ):
+
+                content_hash = (
+                    hashlib.sha256(
+                        chunk.encode(
+                            "utf-8"
+                        )
+                    )
+                    .hexdigest()
+                )
+
+
+                records.append(
                     {
-                        "status": "ready",
-                        "collection_name": (
-                            collection_name
-                        ),
-                        "chunk_count": len(
-                            chunks
-                        ),
+                        "user_id":
+                            user_id_str,
+
+                        "source_document_id":
+                            document_id_str,
+
+                        "chunk_index":
+                            index,
+
+                        "content":
+                            chunk,
+
+                        "content_hash":
+                            content_hash,
+
                         "metadata": {
-                            "embedding_model": (
-                                settings
-                                .gemini_embedding_model
-                            ),
-                            "embedding_dimensions": (
-                                settings
-                                .gemini_embedding_dimensions
-                            ),
-                            "chunk_size": (
-                                settings
-                                .rag_chunk_size
-                            ),
-                            "chunk_overlap": (
-                                settings
-                                .rag_chunk_overlap
-                            ),
+                            "title":
+                                title,
+
+                            "input_type":
+                                document.get(
+                                    "input_type"
+                                ),
+
+                            "chunk_index":
+                                index,
+
+                            "extraction_method":
+                                source_metadata.get(
+                                    "extraction_method"
+                                ),
                         },
+
+                        "embedding":
+                            embedding,
                     }
                 )
+
+
+            # Replace the index only AFTER embeddings
+            # have been generated successfully.
+
+            (
+                admin
+                .table(
+                    "rag_chunks"
+                )
+                .delete()
                 .eq(
                     "source_document_id",
-                    str(document_id),
+                    document_id_str,
                 )
                 .eq(
                     "user_id",
-                    str(user_id),
+                    user_id_str,
                 )
                 .execute()
             )
 
-            (
-                self.admin.table(
-                    "activity_events"
+
+            batch_size = 25
+
+
+            for start in range(
+                0,
+                len(
+                    records
+                ),
+                batch_size,
+            ):
+
+                batch = (
+                    records[
+                        start:
+                        start
+                        + batch_size
+                    ]
                 )
-                .insert(
-                    {
-                        "user_id": str(
-                            user_id
-                        ),
-                        "event_type": (
-                            "rag_index_created"
-                        ),
-                        "source_document_id": (
-                            str(document_id)
-                        ),
-                        "metadata": {
-                            "collection_name": (
-                                collection_name
-                            ),
-                            "chunk_count": len(
-                                chunks
-                            ),
-                        },
-                    }
+
+
+                (
+                    admin
+                    .table(
+                        "rag_chunks"
+                    )
+                    .insert(
+                        batch
+                    )
+                    .execute()
                 )
-                .execute()
+
+
+            self._set_index_state(
+                user_id=(
+                    user_id_str
+                ),
+
+                document_id=(
+                    document_id_str
+                ),
+
+                status=(
+                    "ready"
+                ),
+
+                chunk_count=(
+                    len(
+                        records
+                    )
+                ),
             )
 
-            return (
-                collection_name,
-                len(chunks),
+
+            logger.info(
+                (
+                    "rag_index_complete "
+                    "document_id=%s "
+                    "chunks=%s"
+                ),
+                document_id_str,
+                len(
+                    records
+                ),
             )
+
+
+            return {
+                "document_id":
+                    document_id_str,
+
+                "status":
+                    "ready",
+
+                "chunk_count":
+                    len(
+                        records
+                    ),
+
+                "provider":
+                    "supabase_pgvector",
+
+                "embedding_model":
+                    self.embedding_model,
+
+                "embedding_dimensions":
+                    self.embedding_dimensions,
+            }
+
 
         except Exception:
-            (
-                self.admin.table(
-                    "rag_indexes"
+
+            try:
+
+                self._set_index_state(
+                    user_id=(
+                        user_id_str
+                    ),
+
+                    document_id=(
+                        document_id_str
+                    ),
+
+                    status=(
+                        "failed"
+                    ),
+
+                    chunk_count=(
+                        0
+                    ),
                 )
-                .update(
-                    {
-                        "status": "failed",
-                    }
-                )
-                .eq(
-                    "source_document_id",
-                    str(document_id),
-                )
-                .eq(
-                    "user_id",
-                    str(user_id),
-                )
-                .execute()
-            )
+
+            except Exception:
+
+                pass
+
 
             raise
 
-    async def retrieve(
+
+    async def query(
         self,
-        document_id: UUID,
-        user_id: UUID,
-        query: str,
-        top_k: int | None = None,
-    ) -> list[RetrievedChunk]:
-        collection_name, _ = (
-            await self.ensure_index(
-                document_id,
-                user_id,
-            )
+        *,
+        user_id:
+            UUID | str,
+
+        query:
+            str,
+
+        document_id:
+            UUID | str | None = None,
+
+        top_k:
+            int | None = None,
+
+        min_similarity:
+            float | None = None,
+    ) -> list[
+        dict[
+            str,
+            Any,
+        ]
+    ]:
+
+        normalized_query = (
+            query.strip()
         )
+
+
+        if not normalized_query:
+
+            raise ValueError(
+                "RAG query cannot be empty."
+            )
+
 
         query_embedding = (
-            await embedding_service
-            .embed_query(
-                query
+            await self._embed(
+                text=(
+                    normalized_query
+                ),
+
+                purpose=(
+                    "query"
+                ),
             )
         )
 
-        return await (
-            chroma_service.query(
-                collection_name=(
-                    collection_name
+
+        resolved_top_k = (
+            top_k
+            or settings.rag_top_k
+        )
+
+
+        resolved_similarity = (
+            self.default_min_similarity
+            if min_similarity
+            is None
+            else min_similarity
+        )
+
+
+        admin = (
+            get_supabase_admin_client()
+        )
+
+
+        response = (
+            admin.rpc(
+                "match_rag_chunks",
+
+                {
+                    "query_embedding":
+                        query_embedding,
+
+                    "match_user_id":
+                        str(
+                            user_id
+                        ),
+
+                    "match_document_id":
+                        (
+                            str(
+                                document_id
+                            )
+                            if document_id
+                            is not None
+                            else None
+                        ),
+
+                    "match_count":
+                        int(
+                            resolved_top_k
+                        ),
+
+                    "min_similarity":
+                        float(
+                            resolved_similarity
+                        ),
+                },
+            )
+            .execute()
+        )
+
+
+        return list(
+            response.data
+            or []
+        )
+
+
+    async def retrieve(
+        self,
+        *,
+        user_id:
+            UUID | str,
+
+        query:
+            str,
+
+        document_id:
+            UUID | str | None = None,
+
+        top_k:
+            int | None = None,
+
+        min_similarity:
+            float | None = None,
+    ) -> list[
+        dict[
+            str,
+            Any,
+        ]
+    ]:
+
+        return await self.query(
+            user_id=(
+                user_id
+            ),
+
+            query=(
+                query
+            ),
+
+            document_id=(
+                document_id
+            ),
+
+            top_k=(
+                top_k
+            ),
+
+            min_similarity=(
+                min_similarity
+            ),
+        )
+
+
+    async def retrieve_context(
+        self,
+        *,
+        user_id:
+            UUID | str,
+
+        query:
+            str,
+
+        document_id:
+            UUID | str | None = None,
+
+        top_k:
+            int | None = None,
+    ) -> str:
+
+        results = (
+            await self.query(
+                user_id=(
+                    user_id
                 ),
-                query_embedding=(
-                    query_embedding
+
+                query=(
+                    query
                 ),
+
+                document_id=(
+                    document_id
+                ),
+
                 top_k=(
                     top_k
-                    or settings.rag_top_k
                 ),
             )
         )
 
 
-rag_service = RAGService()
+        sections: list[
+            str
+        ] = []
+
+
+        for item in (
+            results
+        ):
+
+            similarity = float(
+                item.get(
+                    "similarity",
+                    0,
+                )
+            )
+
+
+            sections.append(
+                (
+                    "[SOURCE CHUNK "
+                    f"{item.get('chunk_index')} "
+                    f"| similarity="
+                    f"{similarity:.4f}]\n"
+                    f"{item.get('content', '')}"
+                )
+            )
+
+
+        return (
+            "\n\n".join(
+                sections
+            )
+        )
+
+
+    async def delete_document_index(
+        self,
+        *,
+        document_id:
+            UUID | str,
+
+        user_id:
+            UUID | str,
+    ) -> None:
+
+        admin = (
+            get_supabase_admin_client()
+        )
+
+
+        (
+            admin
+            .table(
+                "rag_chunks"
+            )
+            .delete()
+            .eq(
+                "source_document_id",
+                str(
+                    document_id
+                ),
+            )
+            .eq(
+                "user_id",
+                str(
+                    user_id
+                ),
+            )
+            .execute()
+        )
+
+
+        (
+            admin
+            .table(
+                "rag_indexes"
+            )
+            .delete()
+            .eq(
+                "source_document_id",
+                str(
+                    document_id
+                ),
+            )
+            .eq(
+                "user_id",
+                str(
+                    user_id
+                ),
+            )
+            .execute()
+        )
+
+
+rag_service = (
+    RagService()
+)

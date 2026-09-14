@@ -34,6 +34,7 @@ SOURCE_TYPES = [
     "csv",
     "xlsx",
     "json",
+    "video",
 ]
 
 

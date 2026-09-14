@@ -30,6 +30,9 @@ from app.schemas.reliability import (
 )
 
 from app.services.ai.structured_gemini import (
+    GeminiRateLimitError,
+    GeminiServiceUnavailableError,
+    StructuredGenerationError,
     structured_gemini_service,
 )
 
@@ -1219,6 +1222,10 @@ class HierarchicalAnalysisService:
 
         failed_chunks = 0
 
+        failed_errors: list[
+            BaseException
+        ] = []
+
 
         for (
             chunk,
@@ -1236,6 +1243,10 @@ class HierarchicalAnalysisService:
 
                 failed_chunks += 1
 
+                failed_errors.append(
+                    result
+                )
+
                 continue
 
 
@@ -1248,6 +1259,40 @@ class HierarchicalAnalysisService:
 
 
         if not successful:
+
+            # -----------------------------------------------
+            # Preserve meaningful AI provider failures.
+            #
+            # This prevents a Gemini 429 / temporary outage
+            # from being converted into the generic:
+            # "All document analysis chunks failed."
+            # -----------------------------------------------
+
+            for error_type in (
+                GeminiRateLimitError,
+                GeminiServiceUnavailableError,
+                StructuredGenerationError,
+            ):
+
+                for error in (
+                    failed_errors
+                ):
+
+                    if isinstance(
+                        error,
+                        error_type,
+                    ):
+
+                        raise error
+
+
+            if failed_errors:
+
+                raise RuntimeError(
+                    "All document analysis "
+                    "chunks failed."
+                ) from failed_errors[0]
+
 
             raise RuntimeError(
                 "All document analysis "

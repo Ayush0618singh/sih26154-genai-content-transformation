@@ -7,10 +7,16 @@ import {
 import Link from "next/link";
 
 import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronDown,
+  Clock3,
   Eye,
   History,
   Loader2,
+  Sparkles,
   Trash2,
+  WandSparkles,
 } from "lucide-react";
 
 import {
@@ -72,23 +78,70 @@ import {
 } from "@/lib/utils/format";
 
 
-const selectClassName =
-  "flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40";
+const selectClassName = [
+  "h-11",
+  "min-w-[170px]",
+  "appearance-none",
+  "rounded-xl",
+  "border",
+  "border-input",
+  "bg-background/60",
+  "px-3.5",
+  "pr-10",
+  "text-sm",
+  "font-medium",
+  "outline-none",
+  "transition-all",
+  "hover:border-primary/30",
+  "focus:border-primary/50",
+  "focus:ring-4",
+  "focus:ring-primary/10",
+].join(" ");
+
+
+function transformationStatusClass(
+  status: string
+) {
+  switch (
+    status.toLowerCase()
+  ) {
+    case "completed":
+      return "border-primary/25 bg-primary/10 text-primary";
+
+    case "processing":
+      return "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+
+    case "failed":
+      return "border-destructive/25 bg-destructive/10 text-destructive";
+
+    case "pending":
+      return "border-border bg-muted/50 text-muted-foreground";
+
+    default:
+      return "border-border bg-muted text-muted-foreground";
+  }
+}
 
 
 export function HistoryPage() {
   const queryClient =
     useQueryClient();
 
+
   const [
     page,
     setPage,
-  ] = useState(1);
+  ] = useState(
+    1
+  );
+
 
   const [
     status,
     setStatus,
-  ] = useState("");
+  ] = useState(
+    ""
+  );
 
 
   const query =
@@ -124,6 +177,7 @@ export function HistoryPage() {
             "Transformation deleted."
           );
 
+
           await queryClient.invalidateQueries(
             {
               queryKey: [
@@ -131,6 +185,7 @@ export function HistoryPage() {
               ],
             }
           );
+
 
           await queryClient.invalidateQueries(
             {
@@ -144,12 +199,13 @@ export function HistoryPage() {
       onError:
         (
           error
-        ) =>
+        ) => {
           toast.error(
             getApiErrorMessage(
               error
             )
-          ),
+          );
+        },
     });
 
 
@@ -163,9 +219,13 @@ export function HistoryPage() {
         `Delete "${title ?? "this transformation"}" and its exports?`
       );
 
-    if (!confirmed) {
+
+    if (
+      !confirmed
+    ) {
       return;
     }
+
 
     deleteMutation.mutate(
       id
@@ -178,79 +238,185 @@ export function HistoryPage() {
 
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <div>
-        <Badge variant="secondary">
-          Transformation History
-        </Badge>
+    <div className="mx-auto max-w-[1500px] space-y-6 lg:space-y-7">
+      {/* =====================================================
+          HEADER
+          ===================================================== */}
 
-        <h1 className="mt-3 text-3xl font-bold tracking-tight">
-          History
-        </h1>
+      <section
+        className={[
+          "relative",
+          "overflow-hidden",
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          Review previous AI transformations and reopen generated results.
-        </p>
-      </div>
+          "rounded-[1.75rem]",
+
+          "border",
+          "border-primary/15",
+
+          "bg-gradient-to-br",
+          "from-primary/10",
+          "via-card/90",
+          "to-card",
+
+          "p-6",
+
+          "sm:p-7",
+        ].join(" ")}
+      >
+        <div className="pointer-events-none absolute -right-28 -top-28 size-72 rounded-full bg-primary/12 blur-[80px]" />
 
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div
+          className={[
+            "relative",
+            "flex",
+            "flex-col",
+            "justify-between",
+            "gap-6",
+
+            "lg:flex-row",
+            "lg:items-end",
+          ].join(" ")}
+        >
+          <div>
+            <div className="premium-kicker">
+              <Clock3 className="size-3.5" />
+
+              Transformation Timeline
+            </div>
+
+            <h1
+              className={[
+                "mt-4",
+                "text-3xl",
+                "font-bold",
+                "tracking-[-0.045em]",
+                "sm:text-4xl",
+              ].join(" ")}
+            >
+              History
+            </h1>
+
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Review previous AI transformation jobs, inspect their
+              status and reopen completed generated results.
+            </p>
+          </div>
+
+
+          <Link
+            href="/transform"
+            className={cn(
+              buttonVariants({
+                size:
+                  "lg",
+              }),
+
+              "h-11"
+            )}
+          >
+            <WandSparkles className="size-4" />
+
+            New Transformation
+
+            <ArrowRight className="size-4" />
+          </Link>
+        </div>
+      </section>
+
+
+      {/* =====================================================
+          HISTORY
+          ===================================================== */}
+
+      <Card className="premium-card overflow-hidden">
+        <CardHeader className="border-b border-border/60 pb-5">
+          <div
+            className={[
+              "flex",
+              "flex-col",
+              "justify-between",
+              "gap-4",
+
+              "sm:flex-row",
+              "sm:items-center",
+            ].join(" ")}
+          >
             <div>
-              <CardTitle>
-                Transformations
-              </CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle>
+                  AI Transformations
+                </CardTitle>
+
+                {data && (
+                  <Badge
+                    variant="outline"
+                    className="border-primary/20 bg-primary/5 text-primary"
+                  >
+                    {data.pagination.total.toLocaleString(
+                      "en-IN"
+                    )}{" "}
+                    RUNS
+                  </Badge>
+                )}
+              </div>
 
               <CardDescription className="mt-1">
-                Complete history of AI processing jobs.
+                Complete history of content intelligence and generation jobs.
               </CardDescription>
             </div>
 
-            <select
-              className={
-                selectClassName
-              }
-              value={
-                status
-              }
-              onChange={(
-                event
-              ) => {
-                setPage(
-                  1
-                );
 
-                setStatus(
-                  event.target
-                    .value
-                );
-              }}
-            >
-              <option value="">
-                All statuses
-              </option>
+            <div className="relative">
+              <select
+                className={
+                  selectClassName
+                }
+                value={
+                  status
+                }
+                aria-label="Filter transformation status"
+                onChange={(
+                  event
+                ) => {
+                  setPage(
+                    1
+                  );
 
-              <option value="completed">
-                Completed
-              </option>
+                  setStatus(
+                    event.target
+                      .value
+                  );
+                }}
+              >
+                <option value="">
+                  All statuses
+                </option>
 
-              <option value="processing">
-                Processing
-              </option>
+                <option value="completed">
+                  Completed
+                </option>
 
-              <option value="failed">
-                Failed
-              </option>
+                <option value="processing">
+                  Processing
+                </option>
 
-              <option value="pending">
-                Pending
-              </option>
-            </select>
+                <option value="failed">
+                  Failed
+                </option>
+
+                <option value="pending">
+                  Pending
+                </option>
+              </select>
+
+              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            </div>
           </div>
         </CardHeader>
 
-        <CardContent>
+
+        <CardContent className="pt-6">
           {query.isLoading ? (
             <div className="space-y-3">
               {Array.from({
@@ -264,24 +430,32 @@ export function HistoryPage() {
                     key={
                       index
                     }
-                    className="h-16"
+                    className="h-[78px] rounded-xl"
                   />
                 )
               )}
             </div>
           ) : query.isError ? (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-5 text-sm text-destructive">
+            <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive">
               {getApiErrorMessage(
                 query.error
               )}
             </div>
           ) : data?.items.length ? (
             <>
-              <div className="overflow-hidden rounded-xl border">
+              <div
+                className={[
+                  "overflow-x-auto",
+                  "rounded-2xl",
+                  "border",
+                  "border-border/70",
+                  "bg-background/30",
+                ].join(" ")}
+              >
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>
+                    <TableRow className="bg-muted/25 hover:bg-muted/25">
+                      <TableHead className="min-w-[300px]">
                         Transformation
                       </TableHead>
 
@@ -289,7 +463,7 @@ export function HistoryPage() {
                         Audience
                       </TableHead>
 
-                      <TableHead>
+                      <TableHead className="min-w-[180px]">
                         Outputs
                       </TableHead>
 
@@ -297,7 +471,7 @@ export function HistoryPage() {
                         Status
                       </TableHead>
 
-                      <TableHead>
+                      <TableHead className="min-w-[130px]">
                         Created
                       </TableHead>
 
@@ -306,6 +480,7 @@ export function HistoryPage() {
                       </TableHead>
                     </TableRow>
                   </TableHeader>
+
 
                   <TableBody>
                     {data.items.map(
@@ -316,35 +491,91 @@ export function HistoryPage() {
                           key={
                             item.id
                           }
+                          className="group transition-colors hover:bg-primary/[0.035]"
                         >
                           <TableCell>
-                            <div className="max-w-xs">
-                              <p className="truncate font-medium">
-                                {item.title ??
-                                  "Transformation"}
-                              </p>
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div
+                                className={[
+                                  "premium-icon-box",
+                                  "flex",
+                                  "size-10",
+                                  "shrink-0",
+                                  "items-center",
+                                  "justify-center",
+                                  "rounded-xl",
+                                ].join(" ")}
+                              >
+                                <Sparkles className="size-[18px]" />
+                              </div>
 
-                              <p className="mt-1 truncate text-xs text-muted-foreground">
-                                {item.objective ??
-                                  "No objective"}
-                              </p>
+
+                              <div className="min-w-0">
+                                <p
+                                  className={[
+                                    "max-w-[360px]",
+                                    "truncate",
+                                    "text-sm",
+                                    "font-semibold",
+                                  ].join(" ")}
+                                >
+                                  {item.title ??
+                                    "AI Transformation"}
+                                </p>
+
+                                <p
+                                  className={[
+                                    "mt-1",
+                                    "max-w-[360px]",
+                                    "truncate",
+                                    "text-[10px]",
+                                    "text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {item.objective ??
+                                    "No communication objective"}
+                                </p>
+                              </div>
                             </div>
                           </TableCell>
 
+
                           <TableCell>
-                            {item.target_audience ??
-                              "General"}
+                            <span className="text-sm font-medium">
+                              {item.target_audience ??
+                                "General"}
+                            </span>
                           </TableCell>
+
 
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline">
+                              <span
+                                className={[
+                                  "flex",
+                                  "size-7",
+                                  "items-center",
+                                  "justify-center",
+
+                                  "rounded-lg",
+
+                                  "border",
+                                  "border-primary/20",
+
+                                  "bg-primary/8",
+
+                                  "text-[10px]",
+                                  "font-bold",
+                                  "text-primary",
+                                ].join(" ")}
+                              >
                                 {
                                   item.output_count
                                 }
-                              </Badge>
+                              </span>
 
-                              <span className="hidden text-xs text-muted-foreground xl:inline">
+
+                              <span className="max-w-[180px] truncate text-xs text-muted-foreground">
                                 {item.selected_outputs
                                   .slice(
                                     0,
@@ -356,33 +587,40 @@ export function HistoryPage() {
                                   .join(
                                     ", "
                                   )}
+
+                                {item.selected_outputs.length >
+                                2
+                                  ? ` +${item.selected_outputs.length - 2}`
+                                  : ""}
                               </span>
                             </div>
                           </TableCell>
 
+
                           <TableCell>
                             <Badge
-                              variant={
-                                item.status ===
-                                "completed"
-                                  ? "secondary"
-                                  : item.status ===
-                                      "failed"
-                                    ? "destructive"
-                                    : "outline"
-                              }
+                              variant="outline"
+                              className={cn(
+                                "border text-[10px]",
+
+                                transformationStatusClass(
+                                  item.status
+                                )
+                              )}
                             >
-                              {
+                              {humanize(
                                 item.status
-                              }
+                              )}
                             </Badge>
                           </TableCell>
 
-                          <TableCell>
+
+                          <TableCell className="text-sm text-muted-foreground">
                             {formatDate(
                               item.created_at
                             )}
                           </TableCell>
+
 
                           <TableCell>
                             <div className="flex justify-end gap-1">
@@ -394,9 +632,12 @@ export function HistoryPage() {
                                     buttonVariants({
                                       variant:
                                         "ghost",
+
                                       size:
-                                        "icon",
-                                    })
+                                        "icon-sm",
+                                    }),
+
+                                    "hover:bg-primary/10 hover:text-primary"
                                   )}
                                   aria-label="View transformation"
                                 >
@@ -404,24 +645,27 @@ export function HistoryPage() {
                                 </Link>
                               )}
 
+
                               <Button
                                 type="button"
                                 variant="ghost"
-                                size="icon"
+                                size="icon-sm"
                                 disabled={
                                   deleteMutation.isPending
                                 }
+                                className="hover:bg-destructive/10 hover:text-destructive"
                                 onClick={() =>
                                   remove(
                                     item.id,
                                     item.title
                                   )
                                 }
+                                aria-label="Delete transformation"
                               >
                                 {deleteMutation.isPending ? (
                                   <Loader2 className="size-4 animate-spin" />
                                 ) : (
-                                  <Trash2 className="size-4 text-destructive" />
+                                  <Trash2 className="size-4" />
                                 )}
                               </Button>
                             </div>
@@ -434,17 +678,56 @@ export function HistoryPage() {
               </div>
 
 
-              <div className="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <p className="text-sm text-muted-foreground">
-                  {data.pagination.total.toLocaleString(
-                    "en-IN"
-                  )}{" "}
-                  transformation
-                  {data.pagination.total !==
-                  1
-                    ? "s"
-                    : ""}
-                </p>
+              {/* Pagination */}
+
+              <div
+                className={[
+                  "mt-5",
+
+                  "flex",
+                  "flex-col",
+                  "justify-between",
+                  "gap-4",
+
+                  "rounded-xl",
+
+                  "border",
+                  "border-border/60",
+
+                  "bg-muted/15",
+
+                  "px-4",
+                  "py-3",
+
+                  "sm:flex-row",
+                  "sm:items-center",
+                ].join(" ")}
+              >
+                <div>
+                  <p className="text-sm font-semibold">
+                    {data.pagination.total.toLocaleString(
+                      "en-IN"
+                    )}{" "}
+                    transformation
+                    {data.pagination.total !==
+                    1
+                      ? "s"
+                      : ""}
+                  </p>
+
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                    Page{" "}
+                    {
+                      data.pagination.page
+                    }{" "}
+                    of{" "}
+                    {Math.max(
+                      data.pagination.total_pages,
+                      1
+                    )}
+                  </p>
+                </div>
+
 
                 <div className="flex items-center gap-2">
                   <Button
@@ -468,20 +751,11 @@ export function HistoryPage() {
                       )
                     }
                   >
+                    <ArrowLeft className="size-3.5" />
+
                     Previous
                   </Button>
 
-                  <span className="text-sm text-muted-foreground">
-                    Page{" "}
-                    {
-                      data.pagination.page
-                    }{" "}
-                    of{" "}
-                    {Math.max(
-                      data.pagination.total_pages,
-                      1
-                    )}
-                  </span>
 
                   <Button
                     type="button"
@@ -502,21 +776,57 @@ export function HistoryPage() {
                     }
                   >
                     Next
+
+                    <ArrowRight className="size-3.5" />
                   </Button>
                 </div>
               </div>
             </>
           ) : (
-            <div className="py-16 text-center">
-              <History className="mx-auto size-10 text-muted-foreground/40" />
+            <div
+              className={[
+                "rounded-2xl",
 
-              <p className="mt-4 font-semibold">
-                No transformations yet
+                "border",
+                "border-dashed",
+                "border-border",
+
+                "bg-muted/15",
+
+                "px-5",
+                "py-16",
+
+                "text-center",
+              ].join(" ")}
+            >
+              <div className="premium-icon-box mx-auto flex size-14 items-center justify-center rounded-2xl">
+                <History className="size-6" />
+              </div>
+
+              <h3 className="mt-5 text-base font-semibold">
+                No transformations found
+              </h3>
+
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                Completed and in-progress AI transformation jobs will
+                appear here.
               </p>
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                Your completed AI jobs will appear here.
-              </p>
+              <Link
+                href="/transform"
+                className={cn(
+                  buttonVariants({
+                    variant:
+                      "default",
+                  }),
+
+                  "mt-6"
+                )}
+              >
+                <WandSparkles className="size-4" />
+
+                Start Transformation
+              </Link>
             </div>
           )}
         </CardContent>

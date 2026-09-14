@@ -18,7 +18,24 @@ export default function GlobalError({
 }: GlobalErrorProps) {
   return (
     <html lang="en">
-      <body>
+      <body
+        style={{
+          margin:
+            0,
+
+          minHeight:
+            "100vh",
+
+          fontFamily:
+            "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+
+          background:
+            "#11100e",
+
+          color:
+            "#f7f4ec",
+        }}
+      >
         <main
           style={{
             minHeight:
@@ -36,14 +53,8 @@ export default function GlobalError({
             padding:
               "24px",
 
-            fontFamily:
-              "Arial, sans-serif",
-
             background:
-              "#f8fafc",
-
-            color:
-              "#0f172a",
+              "radial-gradient(circle at 50% 0%, rgba(196, 151, 70, 0.16), transparent 38%), #11100e",
           }}
         >
           <div
@@ -52,103 +63,192 @@ export default function GlobalError({
                 "100%",
 
               maxWidth:
-                "520px",
+                "540px",
 
               padding:
-                "32px",
+                "36px",
 
               border:
-                "1px solid #e2e8f0",
+                "1px solid rgba(212, 174, 96, 0.22)",
 
               borderRadius:
-                "18px",
+                "24px",
 
               background:
-                "#ffffff",
+                "rgba(28, 26, 22, 0.95)",
+
+              boxShadow:
+                "0 35px 100px -50px rgba(0,0,0,0.9)",
 
               textAlign:
                 "center",
-
-              boxShadow:
-                "0 20px 60px rgba(15,23,42,0.08)",
             }}
           >
             <div
               style={{
-                fontSize:
-                  "32px",
-              }}
-            >
-              ⚠
-            </div>
+                width:
+                  "64px",
 
-            <h1
-              style={{
-                marginTop:
+                height:
+                  "64px",
+
+                margin:
+                  "0 auto",
+
+                display:
+                  "flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "center",
+
+                border:
+                  "1px solid rgba(212, 174, 96, 0.28)",
+
+                borderRadius:
                   "18px",
 
-                marginBottom:
-                  "10px",
+                background:
+                  "rgba(212, 174, 96, 0.1)",
+
+                color:
+                  "#d8b56d",
 
                 fontSize:
-                  "24px",
+                  "28px",
               }}
             >
-              Application error
-            </h1>
+              !
+            </div>
+
 
             <p
               style={{
                 margin:
-                  "0",
+                  "22px 0 0",
+
+                color:
+                  "#d8b56d",
+
+                fontSize:
+                  "10px",
+
+                fontWeight:
+                  800,
+
+                letterSpacing:
+                  "0.16em",
+
+                textTransform:
+                  "uppercase",
+              }}
+            >
+              TransformAI · System Error
+            </p>
+
+
+            <h1
+              style={{
+                margin:
+                  "12px 0 0",
+
+                fontSize:
+                  "28px",
+
+                lineHeight:
+                  1.2,
+
+                letterSpacing:
+                  "-0.04em",
+              }}
+            >
+              The application encountered an unexpected problem.
+            </h1>
+
+
+            <p
+              style={{
+                margin:
+                  "14px auto 0",
+
+                maxWidth:
+                  "420px",
+
+                color:
+                  "#aaa397",
 
                 fontSize:
                   "14px",
 
                 lineHeight:
-                  "1.7",
-
-                color:
-                  "#64748b",
+                  1.7,
               }}
             >
-              The application encountered an unexpected problem.
+              Your data has not been intentionally modified. Retry
+              the application to restore the workspace.
             </p>
+
 
             {process.env.NODE_ENV ===
               "development" && (
-              <pre
+              <div
                 style={{
                   marginTop:
-                    "20px",
+                    "22px",
 
                   padding:
-                    "12px",
+                    "14px",
 
                   overflow:
                     "auto",
 
+                  border:
+                    "1px solid rgba(255,255,255,0.08)",
+
                   borderRadius:
-                    "10px",
+                    "12px",
 
                   background:
-                    "#f1f5f9",
+                    "rgba(255,255,255,0.035)",
 
                   textAlign:
                     "left",
-
-                  fontSize:
-                    "11px",
-
-                  whiteSpace:
-                    "pre-wrap",
                 }}
               >
-                {
-                  error.message
-                }
-              </pre>
+                <pre
+                  style={{
+                    margin:
+                      0,
+
+                    color:
+                      "#aaa397",
+
+                    fontSize:
+                      "11px",
+
+                    lineHeight:
+                      1.6,
+
+                    whiteSpace:
+                      "pre-wrap",
+
+                    wordBreak:
+                      "break-word",
+                  }}
+                >
+                  {
+                    error.message
+                  }
+
+                  {error.digest
+                    ? `\nDigest: ${error.digest}`
+                    : ""}
+                </pre>
+              </div>
             )}
+
 
             <button
               type="button"
@@ -157,31 +257,40 @@ export default function GlobalError({
               }
               style={{
                 marginTop:
-                  "24px",
+                  "26px",
+
+                minHeight:
+                  "44px",
 
                 border:
-                  "0",
+                  "1px solid rgba(212, 174, 96, 0.35)",
 
                 borderRadius:
-                  "10px",
+                  "12px",
 
                 padding:
-                  "11px 18px",
+                  "0 22px",
 
                 cursor:
                   "pointer",
 
                 background:
-                  "#0f172a",
+                  "linear-gradient(135deg, #d6b266, #b88a38)",
 
                 color:
-                  "#ffffff",
+                  "#17130c",
+
+                fontSize:
+                  "14px",
 
                 fontWeight:
-                  "600",
+                  700,
+
+                boxShadow:
+                  "0 16px 40px -22px rgba(212,174,96,0.7)",
               }}
             >
-              Try again
+              Retry TransformAI
             </button>
           </div>
         </main>

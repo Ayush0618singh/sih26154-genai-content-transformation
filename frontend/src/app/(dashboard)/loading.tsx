@@ -5,13 +5,32 @@ import {
 
 export default function DashboardLoading() {
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <div className="space-y-3">
-        <Skeleton className="h-6 w-32" />
+    <div className="space-y-6 lg:space-y-7">
+      <div
+        className={[
+          "rounded-[1.75rem]",
 
-        <Skeleton className="h-10 w-72 max-w-full" />
+          "border",
+          "border-border/60",
 
-        <Skeleton className="h-4 w-[420px] max-w-full" />
+          "bg-card/60",
+
+          "p-6",
+
+          "sm:p-7",
+        ].join(" ")}
+      >
+        <Skeleton className="h-6 w-40 rounded-full" />
+
+        <Skeleton className="mt-4 h-10 w-72 max-w-full rounded-xl" />
+
+        <Skeleton className="mt-3 h-4 w-[520px] max-w-full" />
+
+        <div className="mt-6 flex gap-3">
+          <Skeleton className="h-11 w-36 rounded-xl" />
+
+          <Skeleton className="h-11 w-44 rounded-xl" />
+        </div>
       </div>
 
 
@@ -27,21 +46,32 @@ export default function DashboardLoading() {
               key={
                 index
               }
-              className="h-36 rounded-xl"
+              className="h-44 rounded-2xl"
             />
           )
         )}
       </div>
 
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Skeleton className="h-80 rounded-xl" />
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Skeleton className="h-[390px] rounded-2xl xl:col-span-2" />
 
-        <Skeleton className="h-80 rounded-xl" />
+        <Skeleton className="h-[390px] rounded-2xl" />
       </div>
 
 
-      <Skeleton className="h-72 rounded-xl" />
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Skeleton className="h-[340px] rounded-2xl" />
+
+        <Skeleton className="h-[340px] rounded-2xl" />
+      </div>
+
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Skeleton className="h-[330px] rounded-2xl" />
+
+        <Skeleton className="h-[330px] rounded-2xl" />
+      </div>
     </div>
   );
 }

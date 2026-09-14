@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     rag_chunk_size: int = 1800
     rag_chunk_overlap: int = 250
     rag_top_k: int = 8
+    rag_min_similarity: float = 0.20
 
     # =========================================================
     # Document processing

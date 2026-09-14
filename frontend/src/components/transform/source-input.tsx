@@ -8,8 +8,9 @@ import {
   FileImage,
   FileSpreadsheet,
   FileText,
+  Film,
+  ShieldCheck,
   UploadCloud,
-  Video,
   X,
 } from "lucide-react";
 
@@ -20,11 +21,6 @@ import {
 import {
   Button,
 } from "@/components/ui/button";
-
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
 
 import {
   cn,
@@ -59,6 +55,20 @@ interface SourceInputProps {
 }
 
 
+function getExtension(
+  filename:
+    string
+) {
+  return (
+    filename
+      .split(".")
+      .pop()
+      ?.toLowerCase() ??
+    ""
+  );
+}
+
+
 function FileIcon({
   filename,
 }: {
@@ -66,10 +76,9 @@ function FileIcon({
     string;
 }) {
   const extension =
-    filename
-      .split(".")
-      .pop()
-      ?.toLowerCase();
+    getExtension(
+      filename
+    );
 
 
   if (
@@ -78,12 +87,11 @@ function FileIcon({
       "mov",
       "webm",
     ].includes(
-      extension ?? ""
+      extension
     )
   ) {
-
     return (
-      <Video className="size-6" />
+      <Film className="size-6" />
     );
   }
 
@@ -98,10 +106,9 @@ function FileIcon({
       "tif",
       "tiff",
     ].includes(
-      extension ?? ""
+      extension
     )
   ) {
-
     return (
       <FileImage className="size-6" />
     );
@@ -112,11 +119,11 @@ function FileIcon({
     [
       "csv",
       "xlsx",
+      "json",
     ].includes(
-      extension ?? ""
+      extension
     )
   ) {
-
     return (
       <FileSpreadsheet className="size-6" />
     );
@@ -129,24 +136,36 @@ function FileIcon({
 }
 
 
+function fileTypeLabel(
+  filename:
+    string
+) {
+  const extension =
+    getExtension(
+      filename
+    );
+
+  return extension
+    ? extension.toUpperCase()
+    : "FILE";
+}
+
+
 export function SourceInput({
   file,
   disabled = false,
   onFileChange,
   onRejected,
 }: SourceInputProps) {
-
   const onDrop =
     useCallback(
       (
         acceptedFiles:
           File[]
       ) => {
-
         if (
           acceptedFiles[0]
         ) {
-
           onFileChange(
             acceptedFiles[0]
           );
@@ -229,7 +248,6 @@ export function SourceInput({
       (
         rejections
       ) => {
-
         const first =
           rejections[0];
 
@@ -241,7 +259,6 @@ export function SourceInput({
           error?.code ===
           "file-too-large"
         ) {
-
           onRejected(
             "File exceeds the 50 MB upload limit."
           );
@@ -259,11 +276,59 @@ export function SourceInput({
 
 
   if (file) {
-
     return (
-      <Card>
-        <CardContent className="flex items-center gap-4 p-5">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <div
+        className={[
+          "group",
+          "relative",
+          "overflow-hidden",
+
+          "rounded-2xl",
+
+          "border",
+          "border-primary/20",
+
+          "bg-gradient-to-br",
+          "from-primary/8",
+          "via-card",
+          "to-card",
+
+          "p-4",
+
+          "shadow-[0_18px_55px_-42px_var(--primary)]",
+
+          "sm:p-5",
+        ].join(" ")}
+      >
+        <div
+          className={[
+            "pointer-events-none",
+            "absolute",
+            "-right-16",
+            "-top-16",
+
+            "size-36",
+
+            "rounded-full",
+
+            "bg-primary/12",
+            "blur-3xl",
+          ].join(" ")}
+        />
+
+        <div className="relative flex items-center gap-4">
+          <div
+            className={[
+              "premium-icon-box",
+              "flex",
+              "size-12",
+              "shrink-0",
+              "items-center",
+              "justify-center",
+
+              "rounded-xl",
+            ].join(" ")}
+          >
             <FileIcon
               filename={
                 file.name
@@ -271,19 +336,68 @@ export function SourceInput({
             />
           </div>
 
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">
-              {
-                file.name
-              }
-            </p>
 
-            <p className="mt-1 text-xs text-muted-foreground">
-              {formatBytes(
-                file.size
-              )}
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="max-w-full truncate text-sm font-semibold">
+                {file.name}
+              </p>
+
+              <span
+                className={[
+                  "rounded-full",
+
+                  "border",
+                  "border-primary/20",
+
+                  "bg-primary/8",
+
+                  "px-2",
+                  "py-0.5",
+
+                  "text-[9px]",
+                  "font-bold",
+                  "tracking-[0.08em]",
+                  "text-primary",
+                ].join(" ")}
+              >
+                {fileTypeLabel(
+                  file.name
+                )}
+              </span>
+            </div>
+
+            <div
+              className={[
+                "mt-1.5",
+                "flex",
+                "flex-wrap",
+                "items-center",
+                "gap-x-3",
+                "gap-y-1",
+
+                "text-[11px]",
+                "text-muted-foreground",
+              ].join(" ")}
+            >
+              <span>
+                {formatBytes(
+                  file.size
+                )}
+              </span>
+
+              <span className="hidden sm:inline">
+                •
+              </span>
+
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="size-3 text-primary" />
+
+                Ready for validation
+              </span>
+            </div>
           </div>
+
 
           <Button
             type="button"
@@ -297,12 +411,18 @@ export function SourceInput({
                 null
               )
             }
+            className={[
+              "shrink-0",
+
+              "hover:bg-destructive/10",
+              "hover:text-destructive",
+            ].join(" ")}
             aria-label="Remove file"
           >
             <X className="size-4" />
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
@@ -311,11 +431,42 @@ export function SourceInput({
     <div
       {...getRootProps()}
       className={cn(
-        "cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-colors",
+        [
+          "group",
+          "relative",
+          "cursor-pointer",
+          "overflow-hidden",
+
+          "rounded-[1.5rem]",
+
+          "border-2",
+          "border-dashed",
+
+          "p-7",
+          "text-center",
+
+          "transition-all",
+          "duration-300",
+
+          "sm:p-10",
+        ].join(" "),
 
         isDragActive
-          ? "border-primary bg-primary/5"
-          : "border-border bg-muted/20 hover:border-primary/50 hover:bg-muted/40",
+          ? [
+              "border-primary",
+              "bg-primary/8",
+
+              "shadow-[0_20px_70px_-40px_var(--primary)]",
+            ].join(" ")
+          : [
+              "border-border/90",
+              "bg-muted/15",
+
+              "hover:-translate-y-0.5",
+              "hover:border-primary/45",
+              "hover:bg-primary/4",
+              "hover:shadow-[0_20px_60px_-45px_var(--primary)]",
+            ].join(" "),
 
         disabled &&
           "pointer-events-none opacity-60"
@@ -325,23 +476,155 @@ export function SourceInput({
         {...getInputProps()}
       />
 
-      <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-        <UploadCloud className="size-7" />
+
+      <div
+        className={[
+          "pointer-events-none",
+          "absolute",
+          "left-1/2",
+          "top-0",
+
+          "h-36",
+          "w-72",
+
+          "-translate-x-1/2",
+          "-translate-y-1/2",
+
+          "rounded-full",
+
+          "bg-primary/10",
+          "blur-3xl",
+
+          "transition-opacity",
+          "duration-300",
+
+          "group-hover:opacity-100",
+        ].join(" ")}
+      />
+
+
+      <div className="relative">
+        <div
+          className={[
+            "premium-icon-box",
+
+            "mx-auto",
+
+            "flex",
+            "size-16",
+            "items-center",
+            "justify-center",
+
+            "rounded-2xl",
+
+            "transition-all",
+            "duration-300",
+
+            "group-hover:-translate-y-1",
+            "group-hover:scale-105",
+          ].join(" ")}
+        >
+          <UploadCloud className="size-7" />
+        </div>
+
+
+        <h3
+          className={[
+            "mt-5",
+
+            "text-base",
+            "font-semibold",
+            "tracking-[-0.02em]",
+          ].join(" ")}
+        >
+          {isDragActive
+            ? "Drop your file here"
+            : "Upload source content"}
+        </h3>
+
+
+        <p
+          className={[
+            "mx-auto",
+            "mt-2",
+            "max-w-lg",
+
+            "text-sm",
+            "leading-6",
+            "text-muted-foreground",
+          ].join(" ")}
+        >
+          Drag and drop your source file here, or click to browse
+          from your computer.
+        </p>
+
+
+        <div
+          className={[
+            "mt-5",
+
+            "flex",
+            "flex-wrap",
+            "items-center",
+            "justify-center",
+            "gap-2",
+          ].join(" ")}
+        >
+          {[
+            "PDF",
+            "DOCX",
+            "TXT",
+            "CSV",
+            "XLSX",
+            "JSON",
+            "IMAGE",
+            "VIDEO",
+          ].map(
+            (
+              item
+            ) => (
+              <span
+                key={
+                  item
+                }
+                className={[
+                  "rounded-full",
+
+                  "border",
+                  "border-border/70",
+
+                  "bg-background/70",
+
+                  "px-2.5",
+                  "py-1",
+
+                  "text-[9px]",
+                  "font-bold",
+                  "tracking-[0.08em]",
+                  "text-muted-foreground",
+                ].join(" ")}
+              >
+                {item}
+              </span>
+            )
+          )}
+        </div>
+
+
+        <p
+          className={[
+            "mt-5",
+
+            "text-[10px]",
+            "font-semibold",
+            "uppercase",
+            "tracking-[0.12em]",
+            "text-primary",
+          ].join(" ")}
+        >
+          Secure upload · Maximum 50 MB
+        </p>
       </div>
-
-      <h3 className="mt-5 font-semibold">
-        Drop your source content here
-      </h3>
-
-      <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
-        PDF, DOCX, TXT, JSON, CSV, XLSX,
-        images or MP4/MOV/WebM videos up to
-        50 MB.
-      </p>
-
-      <p className="mt-4 text-xs font-medium text-primary">
-        Click to browse or drag and drop
-      </p>
     </div>
   );
 }

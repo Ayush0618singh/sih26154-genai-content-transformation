@@ -11,6 +11,10 @@ import {
 } from "next/navigation";
 
 import {
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
   Loader2,
   LockKeyhole,
   Mail,
@@ -78,6 +82,11 @@ export default function SignupPage() {
   const [
     googleLoading,
     setGoogleLoading,
+  ] = useState(false);
+
+  const [
+    showPassword,
+    setShowPassword,
   ] = useState(false);
 
 
@@ -214,16 +223,16 @@ export default function SignupPage() {
   return (
     <>
       <AuthHeading
-        title="Create your account"
-        description="Start turning source content into grounded, audience-ready outputs."
+        title="Create your workspace"
+        description="Create your secure TransformAI account and start converting source content into professional AI-generated assets."
       />
 
-      <Card className="border-border/70 shadow-xl shadow-black/5">
+      <Card className="premium-card border-primary/15">
         <CardContent className="p-6 sm:p-7">
           <Button
             type="button"
             variant="outline"
-            className="h-11 w-full"
+            className="h-11 w-full bg-background/55"
             disabled={
               googleLoading ||
               loading
@@ -233,9 +242,25 @@ export default function SignupPage() {
             }
           >
             {googleLoading ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <span className="mr-2 flex size-5 items-center justify-center rounded-full border text-xs font-bold">
+              <span
+                className={[
+                  "flex",
+                  "size-6",
+                  "items-center",
+                  "justify-center",
+
+                  "rounded-full",
+
+                  "border",
+
+                  "bg-background",
+
+                  "text-xs",
+                  "font-bold",
+                ].join(" ")}
+              >
                 G
               </span>
             )}
@@ -243,36 +268,49 @@ export default function SignupPage() {
             Continue with Google
           </Button>
 
+
           <div className="my-6 flex items-center gap-3">
             <Separator className="flex-1" />
 
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              or email
+            <span
+              className={[
+                "text-[10px]",
+                "font-bold",
+                "uppercase",
+                "tracking-[0.15em]",
+                "text-muted-foreground",
+              ].join(" ")}
+            >
+              or create with email
             </span>
 
             <Separator className="flex-1" />
           </div>
 
+
           <form
             onSubmit={
               handleSubmit
             }
-            className="space-y-5"
+            className="space-y-4"
           >
             <div className="space-y-2">
-              <Label htmlFor="fullName">
+              <Label
+                htmlFor="fullName"
+                className="text-xs font-semibold"
+              >
                 Full name
               </Label>
 
               <div className="relative">
-                <UserRound className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <UserRound className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
                 <Input
                   id="fullName"
                   required
                   autoComplete="name"
-                  placeholder="Your name"
-                  className="h-11 pl-10"
+                  placeholder="Your full name"
+                  className="h-11 rounded-xl bg-background/55 pl-10"
                   value={
                     fullName
                   }
@@ -288,13 +326,17 @@ export default function SignupPage() {
               </div>
             </div>
 
+
             <div className="space-y-2">
-              <Label htmlFor="email">
-                Email
+              <Label
+                htmlFor="email"
+                className="text-xs font-semibold"
+              >
+                Email address
               </Label>
 
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Mail className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
                 <Input
                   id="email"
@@ -302,8 +344,10 @@ export default function SignupPage() {
                   autoComplete="email"
                   required
                   placeholder="you@example.com"
-                  className="h-11 pl-10"
-                  value={email}
+                  className="h-11 rounded-xl bg-background/55 pl-10"
+                  value={
+                    email
+                  }
                   onChange={(
                     event
                   ) =>
@@ -316,22 +360,30 @@ export default function SignupPage() {
               </div>
             </div>
 
+
             <div className="space-y-2">
-              <Label htmlFor="password">
+              <Label
+                htmlFor="password"
+                className="text-xs font-semibold"
+              >
                 Password
               </Label>
 
               <div className="relative">
-                <LockKeyhole className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <LockKeyhole className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
                 <Input
                   id="password"
-                  type="password"
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
                   autoComplete="new-password"
                   required
                   minLength={8}
                   placeholder="Minimum 8 characters"
-                  className="h-11 pl-10"
+                  className="h-11 rounded-xl bg-background/55 pl-10 pr-11"
                   value={
                     password
                   }
@@ -344,28 +396,71 @@ export default function SignupPage() {
                     )
                   }
                 />
+
+                <button
+                  type="button"
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  className="absolute right-3 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() =>
+                    setShowPassword(
+                      (
+                        current
+                      ) =>
+                        !current
+                    )
+                  }
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <CheckCircle2
+                  className={[
+                    "size-3.5",
+                    password.length >=
+                    8
+                      ? "text-primary"
+                      : "",
+                  ].join(" ")}
+                />
+
+                Minimum 8 characters
               </div>
             </div>
 
+
             <Button
               type="submit"
-              className="h-11 w-full"
+              size="lg"
+              className="mt-2 h-11 w-full"
               disabled={
                 loading ||
                 googleLoading
               }
             >
-              {loading && (
-                <Loader2 className="mr-2 size-4 animate-spin" />
+              {loading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <ArrowRight className="size-4" />
               )}
 
-              Create account
+              Create secure workspace
             </Button>
           </form>
 
+
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an
-            account?{" "}
+            Already have an account?{" "}
+
             <Link
               href="/login"
               className="font-semibold text-primary hover:underline"

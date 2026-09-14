@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Any
 from uuid import UUID, uuid4
 
 from app.core.supabase import (
@@ -34,7 +37,8 @@ class TransformationService:
         self,
         document_id: UUID,
         user_id: UUID,
-    ) -> dict:
+    ) -> dict[str, Any]:
+
         response = (
             self.admin.table(
                 "source_documents"
@@ -64,7 +68,9 @@ class TransformationService:
 
         document = response.data[0]
 
-        if document.get("status") != "ready":
+        if document.get(
+            "status"
+        ) != "ready":
             raise ValueError(
                 "Source document is not ready."
             )
@@ -83,9 +89,97 @@ class TransformationService:
         return document
 
     @staticmethod
-    def _build_context(
-        chunks: list,
+    def _serialize_model(
+        value: Any,
+    ) -> dict[str, Any]:
+        """
+        Safely serialize either a Pydantic model
+        or an already-created dictionary.
+        """
+
+        if hasattr(
+            value,
+            "model_dump",
+        ):
+            result = value.model_dump(
+                mode="json"
+            )
+
+            if not isinstance(
+                result,
+                dict,
+            ):
+                raise TypeError(
+                    "Serialized model did not "
+                    "produce a dictionary."
+                )
+
+            return result
+
+        if isinstance(
+            value,
+            dict,
+        ):
+            return value
+
+        raise TypeError(
+            "Expected a Pydantic model or "
+            "dictionary."
+        )
+
+    @staticmethod
+    def _get_chunk_text(
+        chunk: Any,
     ) -> str:
+        """
+        Support both:
+        - legacy RetrievedChunk.text
+        - production pgvector RagSearchResult.content
+        - dictionary results
+        """
+
+        if isinstance(
+            chunk,
+            dict,
+        ):
+            value = (
+                chunk.get(
+                    "content"
+                )
+                or chunk.get(
+                    "text"
+                )
+                or ""
+            )
+
+            return str(
+                value
+            )
+
+        value = (
+            getattr(
+                chunk,
+                "content",
+                None,
+            )
+            or getattr(
+                chunk,
+                "text",
+                None,
+            )
+            or ""
+        )
+
+        return str(
+            value
+        )
+
+    @classmethod
+    def _build_context(
+        cls,
+        chunks: list[Any],
+    ) -> str:
+
         if not chunks:
             return ""
 
@@ -95,11 +189,20 @@ class TransformationService:
             chunks,
             start=1,
         ):
+            chunk_text = (
+                cls._get_chunk_text(
+                    chunk
+                )
+            )
+
+            if not chunk_text.strip():
+                continue
+
             sections.append(
                 (
                     f"[Retrieved Source "
                     f"{index}]\n"
-                    f"{chunk.text}"
+                    f"{chunk_text}"
                 )
             )
 
@@ -110,31 +213,41 @@ class TransformationService:
     @staticmethod
     def _extract_title(
         output_type: OutputType,
-        data: dict,
+        data: dict[str, Any],
     ) -> str | None:
+
         title = data.get(
             "title"
         )
 
         if title:
-            return str(title)
+            return str(
+                title
+            )
 
-        return output_type.value.replace(
-            "_",
-            " ",
-        ).title()
+        return (
+            output_type.value
+            .replace(
+                "_",
+                " ",
+            )
+            .title()
+        )
 
     async def transform(
         self,
         request: TransformationRequest,
         user_id: UUID,
     ) -> TransformationResponse:
+
         document = self._get_document(
             request.document_id,
             user_id,
         )
 
-        transformation_id = uuid4()
+        transformation_id = (
+            uuid4()
+        )
 
         (
             self.admin.table(
@@ -155,11 +268,15 @@ class TransformationService:
                         f"Transformation - "
                         f"{document['original_filename']}"
                     ),
-                    "status": "processing",
+                    "status": (
+                        "processing"
+                    ),
                     "target_audience": (
                         request.target_audience
                     ),
-                    "tone": request.tone,
+                    "tone": (
+                        request.tone
+                    ),
                     "language": (
                         request.language
                     ),
@@ -230,8 +347,8 @@ class TransformationService:
                     "metadata": {
                         "selected_outputs": [
                             item.value
-                            for item in
-                            request.selected_outputs
+                            for item
+                            in request.selected_outputs
                         ]
                     },
                 }
@@ -240,6 +357,10 @@ class TransformationService:
         )
 
         try:
+            # ------------------------------------------------
+            # Reliable document analysis
+            # ------------------------------------------------
+
             analysis = await (
                 content_analysis_service
                 .analyse(
@@ -248,12 +369,73 @@ class TransformationService:
                             "extracted_text"
                         ]
                     ),
+                    document_id=str(
+                        request.document_id
+                    ),
                     filename=(
                         document[
                             "original_filename"
                         ]
                     ),
+                    metadata={
+                        "mime_type": (
+                            document[
+                                "mime_type"
+                            ]
+                        ),
+                        "input_type": (
+                            document[
+                                "input_type"
+                            ]
+                        ),
+                    },
                 )
+            )
+
+            analysis_data = (
+                self._serialize_model(
+                    analysis
+                )
+            )
+
+            source_name = str(
+                document.get(
+                    "original_filename"
+                )
+                or "Source"
+            )
+
+            inferred_title = (
+                source_name
+                .rsplit(
+                    ".",
+                    1,
+                )[0]
+                .replace(
+                    "-",
+                    " ",
+                )
+                .replace(
+                    "_",
+                    " ",
+                )
+                .strip()
+                or "Source"
+            )
+
+            analysis_data.setdefault(
+                "inferred_title",
+                inferred_title,
+            )
+
+            analysis_data.setdefault(
+                "content_type",
+                str(
+                    document.get(
+                        "input_type"
+                    )
+                    or "text"
+                ),
             )
 
             (
@@ -263,9 +445,7 @@ class TransformationService:
                 .update(
                     {
                         "analysis_json": (
-                            analysis.model_dump(
-                                mode="json"
-                            )
+                            analysis_data
                         )
                     }
                 )
@@ -277,17 +457,24 @@ class TransformationService:
                 )
                 .eq(
                     "user_id",
-                    str(user_id),
+                    str(
+                        user_id
+                    ),
                 )
                 .execute()
             )
 
-            rag_context = ""
+            # ------------------------------------------------
+            # RAG context
+            # ------------------------------------------------
 
             if request.use_rag:
-                rag_query = build_rag_query(
-                    request,
-                    analysis,
+
+                rag_query = (
+                    build_rag_query(
+                        request,
+                        analysis,
+                    )
                 )
 
                 chunks = await (
@@ -295,8 +482,12 @@ class TransformationService:
                         document_id=(
                             request.document_id
                         ),
-                        user_id=user_id,
-                        query=rag_query,
+                        user_id=(
+                            user_id
+                        ),
+                        query=(
+                            rag_query
+                        ),
                     )
                 )
 
@@ -306,23 +497,45 @@ class TransformationService:
                     )
                 )
 
+                # Safe fallback:
+                # transformation should still have grounded
+                # source content if retrieval returns no hits.
+                if not rag_context.strip():
+
+                    rag_context = (
+                        document[
+                            "extracted_text"
+                        ][
+                            :30000
+                        ]
+                    )
+
             else:
-                raw_text = (
+
+                rag_context = (
                     document[
                         "extracted_text"
+                    ][
+                        :30000
                     ]
                 )
 
-                rag_context = raw_text[
-                    :30000
-                ]
+            # ------------------------------------------------
+            # Generate selected outputs
+            # ------------------------------------------------
 
             generated = await (
                 transformation_generator
                 .generate(
-                    request=request,
-                    analysis=analysis,
-                    rag_context=rag_context,
+                    request=(
+                        request
+                    ),
+                    analysis=(
+                        analysis
+                    ),
+                    rag_context=(
+                        rag_context
+                    ),
                 )
             )
 
@@ -334,11 +547,14 @@ class TransformationService:
                 output_type,
                 output_model,
             ) in generated.items():
-                output_id = uuid4()
+
+                output_id = (
+                    uuid4()
+                )
 
                 output_data = (
-                    output_model.model_dump(
-                        mode="json"
+                    self._serialize_model(
+                        output_model
                     )
                 )
 
@@ -361,15 +577,15 @@ class TransformationService:
                             "user_id": str(
                                 user_id
                             ),
-                            "transformation_id": (
-                                str(
-                                    transformation_id
-                                )
+                            "transformation_id": str(
+                                transformation_id
                             ),
                             "output_type": (
                                 output_type.value
                             ),
-                            "title": title,
+                            "title": (
+                                title
+                            ),
                             "content_json": (
                                 output_data
                             ),
@@ -380,14 +596,24 @@ class TransformationService:
 
                 output_records.append(
                     GeneratedOutputRecord(
-                        id=output_id,
+                        id=(
+                            output_id
+                        ),
                         output_type=(
                             output_type
                         ),
-                        title=title,
-                        content=output_data,
+                        title=(
+                            title
+                        ),
+                        content=(
+                            output_data
+                        ),
                     )
                 )
+
+            # ------------------------------------------------
+            # Complete transformation
+            # ------------------------------------------------
 
             (
                 self.admin.table(
@@ -398,7 +624,9 @@ class TransformationService:
                         "status": (
                             "completed"
                         ),
-                        "error_message": None,
+                        "error_message": (
+                            None
+                        ),
                     }
                 )
                 .eq(
@@ -409,7 +637,9 @@ class TransformationService:
                 )
                 .eq(
                     "user_id",
-                    str(user_id),
+                    str(
+                        user_id
+                    ),
                 )
                 .execute()
             )
@@ -426,15 +656,11 @@ class TransformationService:
                         "event_type": (
                             "transformation_completed"
                         ),
-                        "source_document_id": (
-                            str(
-                                request.document_id
-                            )
+                        "source_document_id": str(
+                            request.document_id
                         ),
-                        "transformation_id": (
-                            str(
-                                transformation_id
-                            )
+                        "transformation_id": str(
+                            transformation_id
                         ),
                         "metadata": {
                             "output_count": len(
@@ -446,28 +672,41 @@ class TransformationService:
                 .execute()
             )
 
-            return TransformationResponse(
-                transformation_id=(
-                    transformation_id
-                ),
-                document_id=(
-                    request.document_id
-                ),
-                status="completed",
-                analysis=analysis,
-                outputs=output_records,
+            return (
+                TransformationResponse(
+                    transformation_id=(
+                        transformation_id
+                    ),
+                    document_id=(
+                        request.document_id
+                    ),
+                    status=(
+                        "completed"
+                    ),
+                    analysis=(
+                        analysis_data
+                    ),
+                    outputs=(
+                        output_records
+                    ),
+                )
             )
 
         except Exception as exc:
+
             (
                 self.admin.table(
                     "transformations"
                 )
                 .update(
                     {
-                        "status": "failed",
+                        "status": (
+                            "failed"
+                        ),
                         "error_message": (
-                            str(exc)[:2000]
+                            str(
+                                exc
+                            )[:2000]
                         ),
                     }
                 )
@@ -479,7 +718,9 @@ class TransformationService:
                 )
                 .eq(
                     "user_id",
-                    str(user_id),
+                    str(
+                        user_id
+                    ),
                 )
                 .execute()
             )
@@ -496,19 +737,17 @@ class TransformationService:
                         "event_type": (
                             "transformation_failed"
                         ),
-                        "source_document_id": (
-                            str(
-                                request.document_id
-                            )
+                        "source_document_id": str(
+                            request.document_id
                         ),
-                        "transformation_id": (
-                            str(
-                                transformation_id
-                            )
+                        "transformation_id": str(
+                            transformation_id
                         ),
                         "metadata": {
                             "error": (
-                                str(exc)[:1000]
+                                str(
+                                    exc
+                                )[:1000]
                             )
                         },
                     }
